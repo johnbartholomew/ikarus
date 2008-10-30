@@ -986,7 +986,7 @@ static int _glfwCreateWindow( int redbits, int greenbits, int bluebits,
     }
 
     // Create window
-    _glfwWin.Wnd = CreateWindowEx(
+    _glfwWin.Wnd = CreateWindowExA(
                _glfwWin.dwExStyle,        // Extended style
                _GLFW_WNDCLASSNAME,        // Class name
                "GLFW Window",             // Window title
@@ -1111,7 +1111,7 @@ int _glfwPlatformOpenWindow( int width, int height,
                              int alphabits, int depthbits, int stencilbits,
                              int mode, _GLFWhints* hints )
 {
-    WNDCLASS    wc;
+    WNDCLASSA   wc;
     DWORD  dwStyle, dwExStyle;
 
     // Clear platform specific GLFW window state
@@ -1136,7 +1136,7 @@ int _glfwPlatformOpenWindow( int width, int height,
     wc.lpszClassName = _GLFW_WNDCLASSNAME;            // Set class name
 
     // Load user-provided icon if available
-    wc.hIcon = LoadIcon( _glfwLibrary.Instance, "GLFW_ICON" );
+    wc.hIcon = LoadIconA( _glfwLibrary.Instance, "GLFW_ICON" );
     if( !wc.hIcon )
     {
         // Load default icon
@@ -1144,7 +1144,7 @@ int _glfwPlatformOpenWindow( int width, int height,
     }
 
     // Register the window class
-    _glfwWin.ClassAtom = RegisterClass( &wc );
+    _glfwWin.ClassAtom = RegisterClassA( &wc );
     if( !_glfwWin.ClassAtom )
     {
         _glfwPlatformCloseWindow();
@@ -1260,7 +1260,7 @@ void _glfwPlatformCloseWindow( void )
     if( _glfwWin.ClassAtom )
     {
         // Unregister class
-        UnregisterClass( _GLFW_WNDCLASSNAME, _glfwLibrary.Instance );
+        UnregisterClassA( _GLFW_WNDCLASSNAME, _glfwLibrary.Instance );
         _glfwWin.ClassAtom = 0;
     }
 
@@ -1280,7 +1280,7 @@ void _glfwPlatformCloseWindow( void )
 void _glfwPlatformSetWindowTitle( const char *title )
 {
     // Set window title
-    (void) SetWindowText( _glfwWin.Wnd, title );
+    (void) SetWindowTextA( _glfwWin.Wnd, title );
 }
 
 

@@ -91,7 +91,7 @@ static float _glfwCalcJoystickPos( DWORD pos, DWORD min, DWORD max )
 
 int _glfwPlatformGetJoystickParam( int joy, int param )
 {
-    JOYCAPS jc;
+    JOYCAPSA jc;
 
 //  return 0;
 
@@ -108,7 +108,7 @@ int _glfwPlatformGetJoystickParam( int joy, int param )
     }
 
     // Get joystick capabilities
-    _glfw_joyGetDevCaps( joy - GLFW_JOYSTICK_1, &jc, sizeof(JOYCAPS) );
+    _glfw_joyGetDevCaps( joy - GLFW_JOYSTICK_1, &jc, sizeof(JOYCAPSA) );
 
     switch( param )
     {
@@ -134,7 +134,7 @@ int _glfwPlatformGetJoystickParam( int joy, int param )
 
 int _glfwPlatformGetJoystickPos( int joy, float *pos, int numaxes )
 {
-    JOYCAPS   jc;
+    JOYCAPSA  jc;
     JOYINFOEX ji;
     int       axis;
 
@@ -147,7 +147,7 @@ int _glfwPlatformGetJoystickPos( int joy, float *pos, int numaxes )
     }
 
     // Get joystick capabilities
-    _glfw_joyGetDevCaps( joy - GLFW_JOYSTICK_1, &jc, sizeof(JOYCAPS) );
+    _glfw_joyGetDevCaps( joy - GLFW_JOYSTICK_1, &jc, sizeof(JOYCAPSA) );
 
     // Get joystick state
     ji.dwSize = sizeof( JOYINFOEX );
@@ -200,7 +200,7 @@ int _glfwPlatformGetJoystickPos( int joy, float *pos, int numaxes )
 int _glfwPlatformGetJoystickButtons( int joy, unsigned char *buttons,
     int numbuttons )
 {
-    JOYCAPS   jc;
+    JOYCAPSA  jc;
     JOYINFOEX ji;
     int       button;
 
@@ -213,7 +213,7 @@ int _glfwPlatformGetJoystickButtons( int joy, unsigned char *buttons,
     }
 
     // Get joystick capabilities
-    _glfw_joyGetDevCaps( joy - GLFW_JOYSTICK_1, &jc, sizeof(JOYCAPS) );
+    _glfw_joyGetDevCaps( joy - GLFW_JOYSTICK_1, &jc, sizeof(JOYCAPSA) );
 
     // Get joystick state
     ji.dwSize = sizeof( JOYINFOEX );

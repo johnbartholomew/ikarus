@@ -49,7 +49,7 @@ static int _glfwInitLibraries( void )
 {
     // gdi32.dll (OpenGL pixel format functions & SwapBuffers)
 #ifndef _GLFW_NO_DLOAD_GDI32
-    _glfwLibrary.Libs.gdi32 = LoadLibrary( "gdi32.dll" );
+    _glfwLibrary.Libs.gdi32 = LoadLibraryA( "gdi32.dll" );
     if( _glfwLibrary.Libs.gdi32 != NULL )
     {
         _glfwLibrary.Libs.ChoosePixelFormat   = (CHOOSEPIXELFORMAT_T)
@@ -81,7 +81,7 @@ static int _glfwInitLibraries( void )
 
     // winmm.dll (for joystick and timer support)
 #ifndef _GLFW_NO_DLOAD_WINMM
-    _glfwLibrary.Libs.winmm = LoadLibrary( "winmm.dll" );
+    _glfwLibrary.Libs.winmm = LoadLibraryA( "winmm.dll" );
     if( _glfwLibrary.Libs.winmm != NULL )
     {
         _glfwLibrary.Libs.joyGetDevCapsA = (JOYGETDEVCAPSA_T)
