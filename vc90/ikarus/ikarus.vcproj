@@ -62,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glfw_d.lib opengl32.lib"
+				AdditionalDependencies="glfw_d.lib soil_d.lib opengl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)-debug.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(SolutionDir)..\lib"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glfw.lib opengl32.lib"
+				AdditionalDependencies="glfw.lib soil.lib opengl32.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(SolutionDir)..\lib"
 				GenerateDebugInformation="true"

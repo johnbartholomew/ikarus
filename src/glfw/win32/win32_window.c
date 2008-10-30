@@ -36,7 +36,7 @@
 //****                  GLFW internal functions                       ****
 //************************************************************************
 
-#define _GLFW_WNDCLASSNAME "GLFW26"
+#define _GLFW_WNDCLASSNAME  TEXT("GLFW26")
 
 
 //========================================================================
@@ -93,7 +93,7 @@ static void _glfwSetForegroundWindow( HWND hWnd )
 
     // For other Windows versions than 95 & NT4.0, the standard approach
     // may not work, so if we failed we have to "trick" Windows into
-    // making our window the foureground window: Iconify and restore
+    // making our window the foreground window: Iconify and restore
     // again. It is ugly, but it seems to work (we turn off those annoying
     // zoom animations to make it look a bit better at least).
 
@@ -986,10 +986,10 @@ static int _glfwCreateWindow( int redbits, int greenbits, int bluebits,
     }
 
     // Create window
-    _glfwWin.Wnd = CreateWindowExA(
+    _glfwWin.Wnd = CreateWindowEx(
                _glfwWin.dwExStyle,        // Extended style
                _GLFW_WNDCLASSNAME,        // Class name
-               "GLFW Window",             // Window title
+               TEXT("GLFW Window"),       // Window title
                _glfwWin.dwStyle,          // Defined window style
                wa.left, wa.top,           // Window position
                full_width,                // Decorated window width
@@ -1111,7 +1111,7 @@ int _glfwPlatformOpenWindow( int width, int height,
                              int alphabits, int depthbits, int stencilbits,
                              int mode, _GLFWhints* hints )
 {
-    WNDCLASSA   wc;
+    WNDCLASS    wc;
     DWORD  dwStyle, dwExStyle;
 
     // Clear platform specific GLFW window state
@@ -1136,7 +1136,7 @@ int _glfwPlatformOpenWindow( int width, int height,
     wc.lpszClassName = _GLFW_WNDCLASSNAME;            // Set class name
 
     // Load user-provided icon if available
-    wc.hIcon = LoadIconA( _glfwLibrary.Instance, "GLFW_ICON" );
+    wc.hIcon = LoadIcon( _glfwLibrary.Instance, TEXT("GLFW_ICON") );
     if( !wc.hIcon )
     {
         // Load default icon
@@ -1144,7 +1144,7 @@ int _glfwPlatformOpenWindow( int width, int height,
     }
 
     // Register the window class
-    _glfwWin.ClassAtom = RegisterClassA( &wc );
+    _glfwWin.ClassAtom = RegisterClass( &wc );
     if( !_glfwWin.ClassAtom )
     {
         _glfwPlatformCloseWindow();
@@ -1260,7 +1260,7 @@ void _glfwPlatformCloseWindow( void )
     if( _glfwWin.ClassAtom )
     {
         // Unregister class
-        UnregisterClassA( _GLFW_WNDCLASSNAME, _glfwLibrary.Instance );
+        UnregisterClass( _GLFW_WNDCLASSNAME, _glfwLibrary.Instance );
         _glfwWin.ClassAtom = 0;
     }
 
