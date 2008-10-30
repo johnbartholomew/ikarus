@@ -1,7 +1,7 @@
 #include "Global.h"
 #include "Skeleton.h"
 
-const double CameraDistance = 20.0;
+const double CameraDistance = 40.0;
 const double Aspect = 4.0 / 3.0;
 const double FoV = 40.0; // degrees
 const double zNear = 0.1;
@@ -57,9 +57,16 @@ void initGL()
 	glEndList();
 }
 
-void render(Skeleton &skel)
+void render(Skeleton &skel, int x, int y)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glTranslated(0.0, 0.0, -CameraDistance);
+	glRotated((double)x, 0.0, 1.0, 0.0);
+	glRotated((double)y, 1.0, 0.0, 0.0);
+
 	glCallList(gridList);
 	skel.render();
 }
@@ -87,7 +94,9 @@ int main(int argc, char *argv[])
 
 		while (true)
 		{
-			render(skel);
+			int x, y;
+			glfwGetMousePos(&x, &y);
+			render(skel, x, y);
 			glfwSwapBuffers();
 			
 			if (glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED))
