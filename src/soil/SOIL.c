@@ -93,7 +93,7 @@ unsigned int
 	SOIL_internal_create_OGL_texture
 	(
 		const unsigned char *const data,
-		int width, int height, int channels,
+		int width, int height, int format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags,
 		unsigned int opengl_texture_type,
@@ -101,12 +101,30 @@ unsigned int
 		unsigned int texture_check_size_enum
 	);
 
+int
+	SOIL_format_to_channel_count
+	(
+		int format
+	)
+{
+	switch (format)
+	{
+	case SOIL_LOAD_AUTO: return 0;
+	case SOIL_LOAD_ALPHA: return 1;
+	case SOIL_LOAD_L: return 1;
+	case SOIL_LOAD_LA: return 2;
+	case SOIL_LOAD_RGB: return 3;
+	case SOIL_LOAD_RGBA: return 4;
+	default: return 0;
+	}
+}
+
 /*	and the code magic begins here [8^)	*/
 unsigned int
 	SOIL_load_OGL_texture
 	(
 		const char *filename,
-		int force_channels,
+		int force_format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
 	)
@@ -130,7 +148,7 @@ unsigned int
 		}
 	}
 	/*	try to load the image	*/
-	img = SOIL_load_image( filename, &width, &height, &channels, force_channels );
+	img = SOIL_load_image( filename, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 	if( NULL == img )
 	{
 		/*	image loading failed	*/
@@ -139,7 +157,7 @@ unsigned int
 	}
 	/*	OK, make it a texture!	*/
 	tex_id = SOIL_internal_create_OGL_texture(
-			img, width, height, channels,
+			img, width, height, force_format,
 			reuse_texture_ID, flags,
 			GL_TEXTURE_2D, GL_TEXTURE_2D,
 			GL_MAX_TEXTURE_SIZE );
@@ -154,7 +172,7 @@ unsigned int
 	(
 		const unsigned char *const buffer,
 		int buffer_length,
-		int force_channels,
+		int force_format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
 	)
@@ -183,7 +201,7 @@ unsigned int
 	img = SOIL_load_image_from_memory(
 					buffer, buffer_length,
 					&width, &height, &channels,
-					force_channels );
+					SOIL_format_to_channel_count(force_format) );
 	if( NULL == img )
 	{
 		/*	image loading failed	*/
@@ -192,7 +210,7 @@ unsigned int
 	}
 	/*	OK, make it a texture!	*/
 	tex_id = SOIL_internal_create_OGL_texture(
-			img, width, height, channels,
+			img, width, height, force_format,
 			reuse_texture_ID, flags,
 			GL_TEXTURE_2D, GL_TEXTURE_2D,
 			GL_MAX_TEXTURE_SIZE );
@@ -211,7 +229,7 @@ unsigned int
 		const char *y_neg_file,
 		const char *z_pos_file,
 		const char *z_neg_file,
-		int force_channels,
+		int force_format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
 	)
@@ -238,7 +256,7 @@ unsigned int
 		return 0;
 	}
 	/*	1st face: try to load the image	*/
-	img = SOIL_load_image( x_pos_file, &width, &height, &channels, force_channels );
+	img = SOIL_load_image( x_pos_file, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 	if( NULL == img )
 	{
 		/*	image loading failed	*/
@@ -247,7 +265,7 @@ unsigned int
 	}
 	/*	upload the texture, and create a texture ID if necessary	*/
 	tex_id = SOIL_internal_create_OGL_texture(
-			img, width, height, channels,
+			img, width, height, force_format,
 			reuse_texture_ID, flags,
 			SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_POSITIVE_X,
 			SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -257,7 +275,7 @@ unsigned int
 	if( tex_id != 0 )
 	{
 		/*	1st face: try to load the image	*/
-		img = SOIL_load_image( x_neg_file, &width, &height, &channels, force_channels );
+		img = SOIL_load_image( x_neg_file, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -266,7 +284,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_NEGATIVE_X,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -277,7 +295,7 @@ unsigned int
 	if( tex_id != 0 )
 	{
 		/*	1st face: try to load the image	*/
-		img = SOIL_load_image( y_pos_file, &width, &height, &channels, force_channels );
+		img = SOIL_load_image( y_pos_file, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -286,7 +304,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_POSITIVE_Y,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -297,7 +315,7 @@ unsigned int
 	if( tex_id != 0 )
 	{
 		/*	1st face: try to load the image	*/
-		img = SOIL_load_image( y_neg_file, &width, &height, &channels, force_channels );
+		img = SOIL_load_image( y_neg_file, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -306,7 +324,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -317,7 +335,7 @@ unsigned int
 	if( tex_id != 0 )
 	{
 		/*	1st face: try to load the image	*/
-		img = SOIL_load_image( z_pos_file, &width, &height, &channels, force_channels );
+		img = SOIL_load_image( z_pos_file, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -326,7 +344,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_POSITIVE_Z,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -337,7 +355,7 @@ unsigned int
 	if( tex_id != 0 )
 	{
 		/*	1st face: try to load the image	*/
-		img = SOIL_load_image( z_neg_file, &width, &height, &channels, force_channels );
+		img = SOIL_load_image( z_neg_file, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -346,7 +364,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -372,7 +390,7 @@ unsigned int
 		int z_pos_buffer_length,
 		const unsigned char *const z_neg_buffer,
 		int z_neg_buffer_length,
-		int force_channels,
+		int force_format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
 	)
@@ -401,7 +419,7 @@ unsigned int
 	/*	1st face: try to load the image	*/
 	img = SOIL_load_image_from_memory(
 			x_pos_buffer, x_pos_buffer_length,
-			&width, &height, &channels, force_channels );
+			&width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 	if( NULL == img )
 	{
 		/*	image loading failed	*/
@@ -422,7 +440,7 @@ unsigned int
 		/*	1st face: try to load the image	*/
 		img = SOIL_load_image_from_memory(
 				x_neg_buffer, x_neg_buffer_length,
-				&width, &height, &channels, force_channels );
+				&width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -431,7 +449,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_NEGATIVE_X,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -444,7 +462,7 @@ unsigned int
 		/*	1st face: try to load the image	*/
 		img = SOIL_load_image_from_memory(
 				y_pos_buffer, y_pos_buffer_length,
-				&width, &height, &channels, force_channels );
+				&width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -453,7 +471,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_POSITIVE_Y,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -466,7 +484,7 @@ unsigned int
 		/*	1st face: try to load the image	*/
 		img = SOIL_load_image_from_memory(
 				y_neg_buffer, y_neg_buffer_length,
-				&width, &height, &channels, force_channels );
+				&width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -475,7 +493,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -488,7 +506,7 @@ unsigned int
 		/*	1st face: try to load the image	*/
 		img = SOIL_load_image_from_memory(
 				z_pos_buffer, z_pos_buffer_length,
-				&width, &height, &channels, force_channels );
+				&width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -497,7 +515,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_POSITIVE_Z,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -510,7 +528,7 @@ unsigned int
 		/*	1st face: try to load the image	*/
 		img = SOIL_load_image_from_memory(
 				z_neg_buffer, z_neg_buffer_length,
-				&width, &height, &channels, force_channels );
+				&width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 		if( NULL == img )
 		{
 			/*	image loading failed	*/
@@ -519,7 +537,7 @@ unsigned int
 		}
 		/*	upload the texture, but reuse the assigned texture ID	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				img, width, height, channels,
+				img, width, height, force_format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP, SOIL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
 				SOIL_MAX_CUBE_MAP_TEXTURE_SIZE );
@@ -535,7 +553,7 @@ unsigned int
 	(
 		const char *filename,
 		const char face_order[6],
-		int force_channels,
+		int force_format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
 	)
@@ -585,7 +603,7 @@ unsigned int
 		return 0;
 	}
 	/*	1st off, try to load the full image	*/
-	img = SOIL_load_image( filename, &width, &height, &channels, force_channels );
+	img = SOIL_load_image( filename, &width, &height, &channels, SOIL_format_to_channel_count(force_format) );
 	if( NULL == img )
 	{
 		/*	image loading failed	*/
@@ -602,7 +620,7 @@ unsigned int
 	}
 	/*	try the image split and create	*/
 	tex_id = SOIL_create_OGL_single_cubemap(
-			img, width, height, channels,
+			img, width, height, force_format,
 			face_order, reuse_texture_ID, flags
 			);
 	/*	nuke the temporary image data and return the texture handle	*/
@@ -616,7 +634,7 @@ unsigned int
 		const unsigned char *const buffer,
 		int buffer_length,
 		const char face_order[6],
-		int force_channels,
+		int force_format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
 	)
@@ -671,7 +689,7 @@ unsigned int
 	img = SOIL_load_image_from_memory(
 			buffer, buffer_length,
 			&width, &height, &channels,
-			force_channels );
+			SOIL_format_to_channel_count(force_format) );
 	if( NULL == img )
 	{
 		/*	image loading failed	*/
@@ -688,7 +706,7 @@ unsigned int
 	}
 	/*	try the image split and create	*/
 	tex_id = SOIL_create_OGL_single_cubemap(
-			img, width, height, channels,
+			img, width, height, force_format,
 			face_order, reuse_texture_ID, flags
 			);
 	/*	nuke the temporary image data and return the texture handle	*/
@@ -700,7 +718,7 @@ unsigned int
 	SOIL_create_OGL_single_cubemap
 	(
 		const unsigned char *const data,
-		int width, int height, int channels,
+		int width, int height, int format,
 		const char face_order[6],
 		unsigned int reuse_texture_ID,
 		unsigned int flags
@@ -709,6 +727,7 @@ unsigned int
 	/*	variables	*/
 	unsigned char* sub_img;
 	int dw, dh, sz, i;
+	int channels = SOIL_format_to_channel_count(format);
 	unsigned int tex_id;
 	/*	error checking	*/
 	if( data == NULL )
@@ -795,7 +814,7 @@ unsigned int
 		}
 		/*	upload it as a texture	*/
 		tex_id = SOIL_internal_create_OGL_texture(
-				sub_img, sz, sz, channels,
+				sub_img, sz, sz, format,
 				tex_id, flags,
 				SOIL_TEXTURE_CUBE_MAP,
 				cubemap_target,
@@ -811,14 +830,14 @@ unsigned int
 	SOIL_create_OGL_texture
 	(
 		const unsigned char *const data,
-		int width, int height, int channels,
+		int width, int height, int format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
 	)
 {
 	/*	wrapper function for 2D textures	*/
 	return SOIL_internal_create_OGL_texture(
-				data, width, height, channels,
+				data, width, height, format,
 				reuse_texture_ID, flags,
 				GL_TEXTURE_2D, GL_TEXTURE_2D,
 				GL_MAX_TEXTURE_SIZE );
@@ -841,7 +860,7 @@ unsigned int
 	SOIL_internal_create_OGL_texture
 	(
 		const unsigned char *const data,
-		int width, int height, int channels,
+		int width, int height, int format,
 		unsigned int reuse_texture_ID,
 		unsigned int flags,
 		unsigned int opengl_texture_type,
@@ -853,6 +872,7 @@ unsigned int
 	unsigned char* img;
 	unsigned int tex_id;
 	unsigned int internal_texture_format = 0, original_texture_format = 0;
+	int channels = SOIL_format_to_channel_count(format);
 	int DXT_mode = SOIL_DXT_NONE;
 	int max_supported_size;
 	/*	create a copy the image data	*/
@@ -987,18 +1007,21 @@ unsigned int
 	check_for_GL_errors( "glGenTextures" );
 	#endif
 	/*	and what type am I using as the internal texture format?	*/
-	switch( channels )
+	switch( format )
 	{
-	case 1:
+	case SOIL_LOAD_L:
 		original_texture_format = GL_LUMINANCE;
 		break;
-	case 2:
+	case SOIL_LOAD_ALPHA:
+		original_texture_format = GL_ALPHA;
+		break;
+	case SOIL_LOAD_LA:
 		original_texture_format = GL_LUMINANCE_ALPHA;
 		break;
-	case 3:
+	case SOIL_LOAD_RGB:
 		original_texture_format = GL_RGB;
 		break;
-	case 4:
+	case SOIL_LOAD_RGBA:
 		original_texture_format = GL_RGBA;
 		break;
 	}
