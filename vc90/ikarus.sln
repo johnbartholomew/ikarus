@@ -3,6 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual C++ Express 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ikarus", "ikarus\ikarus.vcproj", "{5D04BD8C-D0FB-4E8B-9943-0547D400E957}"
 	ProjectSection(ProjectDependencies) = postProject
+		{9E0BBF06-489A-4F25-B350-430D14A45AD4} = {9E0BBF06-489A-4F25-B350-430D14A45AD4}
 		{429F5729-CF5C-4FF7-8AFA-8369B8616C50} = {429F5729-CF5C-4FF7-8AFA-8369B8616C50}
 		{D0029D71-4D6C-4C8F-9DBC-EDCE72FC7897} = {D0029D71-4D6C-4C8F-9DBC-EDCE72FC7897}
 	EndProjectSection
@@ -10,6 +11,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "soil", "soil\soil.vcproj", "{D0029D71-4D6C-4C8F-9DBC-EDCE72FC7897}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glfw", "glfw\glfw.vcproj", "{429F5729-CF5C-4FF7-8AFA-8369B8616C50}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glew", "glew\glew.vcproj", "{9E0BBF06-489A-4F25-B350-430D14A45AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +32,10 @@ Global
 		{429F5729-CF5C-4FF7-8AFA-8369B8616C50}.Debug|Win32.Build.0 = Debug|Win32
 		{429F5729-CF5C-4FF7-8AFA-8369B8616C50}.Release|Win32.ActiveCfg = Release|Win32
 		{429F5729-CF5C-4FF7-8AFA-8369B8616C50}.Release|Win32.Build.0 = Release|Win32
+		{9E0BBF06-489A-4F25-B350-430D14A45AD4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9E0BBF06-489A-4F25-B350-430D14A45AD4}.Debug|Win32.Build.0 = Debug|Win32
+		{9E0BBF06-489A-4F25-B350-430D14A45AD4}.Release|Win32.ActiveCfg = Release|Win32
+		{9E0BBF06-489A-4F25-B350-430D14A45AD4}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
