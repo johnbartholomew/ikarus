@@ -62,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glfw_d.lib soil_d.lib opengl32.lib"
+				AdditionalDependencies="glfw_d.lib soil_d.lib glew_d.lib opengl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)-debug.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(SolutionDir)..\lib"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glfw.lib soil.lib opengl32.lib"
+				AdditionalDependencies="glfw.lib soil.lib glew.lib opengl32.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(SolutionDir)..\lib"
 				GenerateDebugInformation="true"
@@ -180,6 +180,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\..\src\ikarus\Font.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ikarus\Ikarus.cpp"
 				>
 			</File>
@@ -207,12 +211,28 @@
 				RelativePath="..\..\src\ikarus\Skeleton.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Texture.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\VertexBuffer.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\..\src\ikarus\FileUtil.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Font.h"
+				>
+			</File>
 			<File
 				RelativePath="..\..\src\ikarus\Global.h"
 				>
@@ -222,7 +242,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\ikarus\vector_math.h"
+				RelativePath="..\..\src\ikarus\smartptr.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Texture.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\VertexBuffer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\vmath.h"
 				>
 			</File>
 		</Filter>
