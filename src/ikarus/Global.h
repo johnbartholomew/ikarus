@@ -23,12 +23,14 @@
 
 #include "vector_math.h"
 
-typedef vmath::vec3<double> vec3d;
+typedef vmath::vec2<int> vec2i; // useful for screen/pixel coordinates
+
 typedef vmath::vec2<double> vec2d;
+typedef vmath::vec3<double> vec3d;
 typedef vmath::vec4<double> vec4d;
 
-typedef vmath::mat3<double> mat3d;
 typedef vmath::mat2<double> mat2d;
+typedef vmath::mat3<double> mat3d;
 typedef vmath::mat4<double> mat4d;
 
 typedef vmath::quat<double> quatd;
