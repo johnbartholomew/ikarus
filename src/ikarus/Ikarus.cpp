@@ -15,24 +15,41 @@ GLuint gridList;
 void renderGrid(int N, double m)
 {
 	double b = m/2.0, a = -b;
-	double x = a;
 	double xd = m / (double)N;
+	double x;
 
+	glColor3f(0.7f, 0.2f, 0.2f);
 	glBegin(GL_LINES);
+	x = a;
 	for (int i = 0; i <= N; ++i)
 	{
 		// y/z plane (left)
 		glVertex3d(a, a, x); glVertex3d(a, b, x); // lines bottom-to-top
 		glVertex3d(a, x, a); glVertex3d(a, x, b); // lines back-to-front
-
+		x += xd;
+	}
+	glEnd();
+	
+	glColor3f(0.2f, 0.7f, 0.2f);
+	glBegin(GL_LINES);
+	x = a;
+	for (int i = 0; i <= N; ++i)
+	{
 		// x/y plane (back)
 		glVertex3d(a, x, a); glVertex3d(b, x, a); // lines left-to-right
 		glVertex3d(x, a, a); glVertex3d(x, b, a); // lines bottom-to-top
+		x += xd;
+	}
+	glEnd();
 
+	glColor3f(0.2f, 0.2f, 0.7f);
+	glBegin(GL_LINES);
+	x = a;
+	for (int i = 0; i <= N; ++i)
+	{
 		// x/z plane (bottom)
 		glVertex3d(a, a, x); glVertex3d(b, a, x); // lines left-to-right
 		glVertex3d(x, a, a); glVertex3d(x, a, b); // lines back-to-front
-
 		x += xd;
 	}
 	glEnd();
@@ -68,8 +85,31 @@ void render(Skeleton &skel, int x, int y)
 	glRotated((double)y, 1.0, 0.0, 0.0);
 
 	glCallList(gridList);
+	glColor3f(1.0f, 1.0f, 1.0f);
 	skel.render();
 }
+
+class CameraGrip
+{
+public:
+	void update()
+	{
+		int x, y;
+		glfwGetMousePos(&x, &y);
+	}
+
+	mat4d getCameraMatrix() const
+	{
+		return lookat_matrix(cameraPos, vec3d(0.0, 0.0, 0.0), vec3d(0.0, 1.0, 0.0));
+	}
+
+private:
+	bool dragging;
+	vec2i origin;
+	vec2i mousePos;
+
+	vec3d cameraPos;
+};
 
 #ifdef _WIN32
 int APIENTRY wWinMain(HINSTANCE hPrevInstance, HINSTANCE hInstance, LPWSTR cmdLine, int nShowCmd)
@@ -92,10 +132,11 @@ int main(int argc, char *argv[])
 		Skeleton skel;
 		skel.loadFromFile("skeleton.txt");
 
+		int x = 0, y = 0;
 		while (true)
 		{
-			int x, y;
-			glfwGetMousePos(&x, &y);
+			if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT))
+				glfwGetMousePos(&x, &y);
 			render(skel, x, y);
 			glfwSwapBuffers();
 			
