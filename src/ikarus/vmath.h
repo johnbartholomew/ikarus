@@ -391,10 +391,10 @@ struct mat3 {
 		elem[0][0] = m00;
 		elem[0][1] = m10;
 		elem[0][2] = m20;
-		elem[0][1] = m01;
+		elem[1][0] = m01;
 		elem[1][1] = m11;
 		elem[1][2] = m21;
-		elem[0][2] = m02;
+		elem[2][0] = m02;
 		elem[2][1] = m12;
 		elem[2][2] = m22;
 	}
@@ -764,21 +764,6 @@ inline mat4<T> euler(const T head, const T pitch, const T roll)
 		rotation_matrix( head, T(0), T(1), T(0));
 }
 
-template <typename T>
-inline mat4<T> elevation_azimuth(const T el, const T az, const T distance)
-{
-	return
-		rotation_matrix(el, T(1), T(0), T(0)) *
-		rotation_matrix(az, T(0), T(1), T(0)) *
-		translation_matrix(T(0), T(0), -distance);
-}
-
-template <typename T>
-inline mat4<T> elevation_azimuth(const T elevation, const T azimuth)
-{
-	return elevation_azimuth(elevation, azimuth, T(0));
-}
-
 template <typename T> 
 inline mat4<T> frustum_matrix(const T l, const T r, const T b, const T t, const T n, const T f)
 {
@@ -944,6 +929,12 @@ inline quat<T> inverse(const quat<T>& q)
 	const T l = dot(q, q);
 	if ( l > T(0) ) return conjugate(q) * inv(l);
 	else return identityq<T>();
+}
+
+template <typename T>
+inline vec3<T> operator * (const quat<T> &q, const vec3<T> &v)
+{
+	return (q * quat<T>(v, T(0)) * inverse(q)).v;
 }
 
 // quaternion utility functions
