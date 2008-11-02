@@ -28,9 +28,9 @@ public:
 	void iterateIK();
 private:
 	void renderTarget();
-	void renderBone(int idx, const vec3d &root);
+	void renderBone(int boneIdx, const vec3d &root);
 
-
+	vec3d ikStep(int boneIdx, const vec3d &rootPos);
 };
 
 #endif

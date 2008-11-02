@@ -55,10 +55,51 @@ void Skeleton::render()
 
 void Skeleton::iterateIK()
 {
+	ikStep(0, vec3d(0.0, 0.0, 0.0));
 }
 
 void Skeleton::solveIK()
 {
+}
+
+vec3d Skeleton::ikStep(int boneIdx, const vec3d &root)
+{
+	Bone &b = bones[boneIdx];
+	const vec3d end = b.orient + root;
+
+	vec3d tip(end);
+
+	if (b.childrenEnd > b.childrenBegin)
+	{
+		assert(b.childrenEnd - b.childrenBegin == 1);
+		for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
+			tip = ikStep(i, end);
+	}
+
+	vec3d v0 = tip - root;
+	vec3d v1 = targetPos - root;
+
+	if (abs(dot(v1, v1)) < 0.01 || abs(dot(v0, v0)) < 0.01)
+		return tip;
+
+	v0 = normalize(v0);
+	v1 = normalize(v1);
+
+	double angle = std::acos(dot(v0, v1));
+	if (abs(angle) < 0.0001)
+		return tip;
+
+	vec3d axis = cross(v0, v1);
+
+	mat4d rot = rotation_matrix(angle, axis);
+
+	b.orient = transform_vector(rot, b.orient);
+	tip = root + transform_vector(rot, tip - root);
+
+	// re-normalize to the correct length
+	b.orient = b.orient * (b.length / length(b.orient));
+
+	return tip;
 }
 
 void Skeleton::renderTarget()
