@@ -28,6 +28,7 @@
 #define VMATH_H
 
 #include <cmath>
+#include <cassert>
 
 #undef minor
 
@@ -40,12 +41,15 @@ namespace vmath {
 template <typename T>
 inline T rsqrt(T x)
 {
-	return T(1) / sqrt(x);
+	const T sqrtx = sqrt(x);
+	assert(sqrtx != T(0));
+	return T(1) / sqrtx;
 }
 
 template <typename T>
 inline T inv(T x)
 {
+	assert(x != T(0));
 	return T(1) / x;
 }
 
