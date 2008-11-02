@@ -27,7 +27,7 @@ public:
 		:	dragging(false),
 			screenCentre(w/2, h/2),
 			screenRadius(std::min(w, h)/2.0),
-			rot(vmath::identityq<double>())
+			az(0.0), el(0.0), az0(0.0), el0(0.0)
 	{
 	}
 
@@ -58,35 +58,35 @@ public:
 	void startDrag(const vec2i &pos)
 	{
 		pt0 = pt1 = screenToSphere(pos);
-		rot0 = rot;
+		az0 = az;
+		el0 = el;
 	}
 	
 	void updateDrag(const vec2i &pos)
 	{
 		pt1 = screenToSphere(pos);
 
-		/*
 		vec3d a, b;
 
-		a = constrainToAxis(startPt, 1);
-		b = constrainToAxis(pt, 1);
-		quatd dragAz(cross(a, b), dot(a, b));
+		a = constrainToAxis(pt0, 1);
+		b = constrainToAxis(pt1, 1);
+		double deltaAz = std::acos(dot(a, b));
+		if (b.x < a.x)
+			deltaAz *= -1.0;
+		
+		a = constrainToAxis(pt0, 0);
+		b = constrainToAxis(pt1, 0);
+		double deltaEl = std::acos(dot(a, b));
+		if (b.y < a.y)
+			deltaEl *= -1.0;
 
-		a = constrainToAxis(startPt, 0);
-		b = constrainToAxis(pt, 0);
-		quatd dragEl(cross(a, b), dot(a, b));
-
-		quatd dragRot = dragAz * dragEl;
-		*/
-
-		quatd dragRot(cross(pt0, pt1), dot(pt0, pt1));
-
-		rot = dragRot * rot0;
+		az = az0 + deltaAz;
+		el = el0 + deltaEl;
 	}
 
 	mat4d getCameraMatrix() const
 	{
-		return vmath::translation_matrix(0.0, 0.0, -CameraDistance) * quat_to_mat4(rot);
+		return vmath::translation_matrix(0.0, 0.0, -CameraDistance) * vmath::azimuth_elevation_matrix(az, el);
 	}
 
 	void render() const
@@ -114,11 +114,6 @@ public:
 			for (int i = 0; i <= N; ++i)
 			{
 				double a = (double)i / (double)N;
-				/*
-				quatd r = slerp(rot0, rot, a) * inverse(rot0);
-				vec3d v = r * pt0;
-				vec2i p = sphereToScreen(v);
-				*/
 				vec2i p = sphereToScreen(slerp(quatd(pt0, 0.0), quatd(pt1, 0.0), a).v);
 				glVertex2i(p.x, p.y);
 			}
@@ -132,7 +127,8 @@ private:
 	double screenRadius;
 
 	vec3d pt0, pt1;
-	quatd rot0, rot;
+	double az0, el0;
+	double az, el;
 
 	// constrains a point on the unit sphere to the given axis (0 = x, 1 = y, 2 = z)
 	vec3d constrainToAxis(vec3d pt, int axis) const
