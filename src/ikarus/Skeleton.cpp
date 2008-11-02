@@ -32,6 +32,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 			ss >> bone.name >> bone.orient[0] >> bone.orient[1] >> bone.orient[2] >> bone.parent >> bone.childrenBegin >> bone.childrenEnd;
 			if (bone.childrenEnd < bone.childrenBegin)
 				throw std::runtime_error("Invalid bone command in skeleton file.");
+			bone.length = length(bone.orient);
 			bones.push_back(bone);
 		}
 		else if (cmd == "")
@@ -48,15 +49,23 @@ void Skeleton::render()
 {
 	glColor3f(1.0f, 1.0f, 1.0f);
 	renderBone(0, vec3d(0.0, 0.0, 0.0));
-	glColor3f(0.0f, 1.0f, 0.0f);
+	glColor3f(1.0f, 1.0f, 0.0f);
 	renderTarget();
+}
+
+void Skeleton::iterateIK()
+{
+}
+
+void Skeleton::solveIK()
+{
 }
 
 void Skeleton::renderTarget()
 {
 	glBegin(GL_LINES);
 	{
-		const double size = 0.5;
+		const double size = 0.25;
 		const vec3d a(size, 0.0, 0.0);
 		const vec3d b(0.0, size, 0.0);
 		const vec3d c(0.0, 0.0, size);
@@ -68,11 +77,13 @@ void Skeleton::renderTarget()
 		const vec3d v4 = targetPos + c;
 		const vec3d v5 = targetPos + b;
 
+#if 0
 		glVertex3dv(v0); glVertex3dv(v5);
 		glVertex3dv(v1); glVertex3dv(v3);
 		glVertex3dv(v2); glVertex3dv(v4);
+#endif
 
-#if 0
+#if 1
 		glVertex3dv(v0); glVertex3dv(v1);
 		glVertex3dv(v0); glVertex3dv(v2);
 		glVertex3dv(v0); glVertex3dv(v3);
@@ -84,9 +95,9 @@ void Skeleton::renderTarget()
 		glVertex3dv(v4); glVertex3dv(v1);
 
 		glVertex3dv(v1); glVertex3dv(v5);
-		glVertex3dv(v1); glVertex3dv(v5);
-		glVertex3dv(v1); glVertex3dv(v5);
-		glVertex3dv(v1); glVertex3dv(v5);
+		glVertex3dv(v2); glVertex3dv(v5);
+		glVertex3dv(v3); glVertex3dv(v5);
+		glVertex3dv(v4); glVertex3dv(v5);
 #endif
 	}
 	glEnd();

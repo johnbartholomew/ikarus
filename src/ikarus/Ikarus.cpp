@@ -12,6 +12,8 @@ const double CameraDistWheelScale = 1.5;
 const int GridCount = 10;
 const double GridWidth = 20.0;
 
+const double MoveStep = 0.2;
+
 double cameraAzimuth = 0.0;
 double cameraElevation = 0.0;
 
@@ -374,16 +376,44 @@ int main(int argc, char *argv[])
 			cam->update();
 			render(skel, *cam);
 
+			skel.iterateIK();
+
 			glfwSwapBuffers();
 
 			if (glfwGetKey(GLFW_KEY_KP_7))
 				cam = &cameraY;
-			else if (glfwGetKey(GLFW_KEY_KP_1))
+			if (glfwGetKey(GLFW_KEY_KP_1))
 				cam = &cameraZ;
-			else if (glfwGetKey(GLFW_KEY_KP_3))
+			if (glfwGetKey(GLFW_KEY_KP_3))
 				cam = &cameraX;
-			else if (glfwGetKey(GLFW_KEY_KP_5))
+			if (glfwGetKey(GLFW_KEY_KP_5))
 				cam = &cameraPerspective;
+
+			vec3d delta(0.0, 0.0, 0.0);
+			if (glfwGetKey('W'))
+				delta.z -= 1.0;
+			if (glfwGetKey('S'))
+				delta.z += 1.0;
+			if (glfwGetKey('A'))
+				delta.x -= 1.0;
+			if (glfwGetKey('D'))
+				delta.x += 1.0;
+			if (glfwGetKey('Q'))
+				delta.y += 1.0;
+			if (glfwGetKey('Z'))
+				delta.y -= 1.0;
+
+			if (delta.x != 0.0 || delta.y != 0.0 || delta.z != 0.0)
+				skel.targetPos += normalize(delta) * MoveStep;
+
+			if (skel.targetPos.x > GridWidth/2.0) skel.targetPos.x = GridWidth/2.0;
+			if (skel.targetPos.x < -GridWidth/2.0) skel.targetPos.x = -GridWidth/2.0;
+
+			if (skel.targetPos.y > GridWidth/2.0) skel.targetPos.y = GridWidth/2.0;
+			if (skel.targetPos.y < 0.0) skel.targetPos.y = 0.0;
+			
+			if (skel.targetPos.z > GridWidth/2.0) skel.targetPos.z = GridWidth/2.0;
+			if (skel.targetPos.z < -GridWidth/2.0) skel.targetPos.z = -GridWidth/2.0;
 			
 			if (glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED))
 				break;

@@ -9,6 +9,10 @@ public:
 		std::string name;
 		vec3d orient;
 
+		// store the original/correct length
+		// that way we don't have to rely on the IK solver exactly maintaining the bone's length
+		double length;
+
 		int parent;
 		int childrenBegin;
 		int childrenEnd;
@@ -19,9 +23,14 @@ public:
 
 	void render();
 	void loadFromFile(const std::string &fname);
+
+	void solveIK();
+	void iterateIK();
 private:
 	void renderTarget();
 	void renderBone(int idx, const vec3d &root);
+
+
 };
 
 #endif
