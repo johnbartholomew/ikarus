@@ -94,7 +94,6 @@ public:
 		if (dragging)
 		{
 			glDisable(GL_TEXTURE_2D);
-			glDisable(GL_BLEND);
 
 			vec2i pos0 = sphereToScreen(pt0);
 			vec2i pos1 = sphereToScreen(pt1);
@@ -209,6 +208,11 @@ void initGL()
 {
 	mat4d camera = vmath::perspective_matrix(FoV, Aspect, zNear, zFar);
 
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	glEnable(GL_LINE_SMOOTH);
+	glLineWidth(0.75f);
+	glEnable(GL_BLEND);
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixd(camera);
 
@@ -226,7 +230,6 @@ void initGL()
 void renderScene(Skeleton &skel, const mat4d &cameraMatrix)
 {
 	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
 
 	mat4d camera = vmath::perspective_matrix(FoV, Aspect, zNear, zFar);
 
@@ -246,13 +249,8 @@ void renderOverlay(const CameraGrip &camGrip)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
+
 	glMatrixMode(GL_MODELVIEW);
-
-	glLoadIdentity();
-	glTranslated(100.0, 100.0, 0.0);
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	gTextRenderer->drawText(gFont, "Hello, world!");
-
 	glLoadIdentity();
 	camGrip.render();
 }
