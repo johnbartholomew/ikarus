@@ -10,7 +10,7 @@ const double zFar = 100.0;
 const double CameraDistWheelScale = 1.5;
 
 const int GridCount = 10;
-const double GridHeight = 20.0;
+const double GridWidth = 20.0;
 
 double cameraAzimuth = 0.0;
 double cameraElevation = 0.0;
@@ -20,11 +20,82 @@ Font *gFont = 0;
 
 GLuint gridList;
 
-
-class CameraGrip
+class Camera
 {
 public:
-	CameraGrip(int w, int h)
+	virtual void update() = 0;
+	virtual void render() const = 0;
+	virtual mat4d getProjection() const = 0;
+	virtual mat4d getModelView() const = 0;
+};
+
+class CameraOrtho : public Camera
+{
+public:
+	CameraOrtho(int w, int h, int axis)
+		:	aspect((double)w / (double)h),
+			axis(axis),
+			scale(GridWidth/2.0) // nb: if you change this change update()
+	{
+	}
+
+	virtual void update()
+	{
+		int wheel = glfwGetMouseWheel();
+		// nb: if you change this change the CameraOrtho initializer
+		scale = (GridWidth/2.0) - wheel*CameraDistWheelScale;
+	}
+
+	virtual void render() const {}
+
+	virtual mat4d getProjection() const
+	{
+		double a = aspect*scale;
+		return vmath::ortho_matrix(-a, a, -scale, scale, 0.1, 100.0);
+	}
+
+	virtual mat4d getModelView() const
+	{
+		mat4d m;
+		if (axis == 0)
+		{
+			m = mat4d(
+				0.0, 0.0, 1.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+		}
+		else if (axis == 1)
+		{
+			m = mat4d(
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 0.0, -1.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+		}
+		else if (axis == 2)
+		{
+			m = mat4d(
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+		}
+		return m * vmath::translation_matrix(0.0, -GridWidth/4.0, 0.0);
+	}
+private:
+	double aspect;
+	double scale;
+	int axis;
+};
+
+class CameraAzimuthElevation : public Camera
+{
+public:
+	CameraAzimuthElevation(int w, int h)
 		:	dragging(false),
 			cameraDist(CameraDistance),
 			screenCentre(w/2, h/2),
@@ -33,7 +104,7 @@ public:
 	{
 	}
 
-	void update()
+	virtual void update()
 	{
 		int wheel = glfwGetMouseWheel();
 		cameraDist = CameraDistance - wheel*CameraDistWheelScale;
@@ -89,12 +160,17 @@ public:
 		el = el0 + deltaEl;
 	}
 
-	mat4d getCameraMatrix() const
+	virtual mat4d getProjection() const
 	{
-		return vmath::translation_matrix(0.0, -GridHeight/4.0, -cameraDist) * vmath::azimuth_elevation_matrix(az, el);
+		return vmath::perspective_matrix(FoV, Aspect, zNear, zFar);
 	}
 
-	void render() const
+	virtual mat4d getModelView() const
+	{
+		return vmath::translation_matrix(0.0, -GridWidth/4.0, -cameraDist) * vmath::azimuth_elevation_matrix(az, el);
+	}
+
+	virtual void render() const
 	{
 		if (dragging)
 		{
@@ -173,7 +249,7 @@ void renderGrid(int N, double m)
 	double xd = m / (double)N;
 	double x;
 
-	glColor3f(0.7f, 0.2f, 0.2f);
+	glColor3f(0.9f, 0.5f, 0.5f);
 	glBegin(GL_LINES);
 	x = a;
 	for (int i = 0; i <= N; ++i, x += xd)
@@ -183,7 +259,7 @@ void renderGrid(int N, double m)
 	{	glVertex3d(a, x+b, a); glVertex3d(a, x+b, b); }// y/z plane (left); lines back-to-front
 	glEnd();
 
-	glColor3f(0.2f, 0.7f, 0.2f);
+	glColor3f(0.5f, 0.9f, 0.5f);
 	glBegin(GL_LINES);
 	x = a;
 	for (int i = 0; i <= N; ++i, x += xd)
@@ -194,7 +270,7 @@ void renderGrid(int N, double m)
 	{	glVertex3d(a, x+b, a); glVertex3d(b, x+b, a); }// x/y plane (back); lines left-to-right
 	glEnd();
 
-	glColor3f(0.2f, 0.2f, 0.7f);
+	glColor3f(0.5f, 0.5f, 0.9f);
 	glBegin(GL_LINES);
 	x = a;
 	for (int i = 0; i <= N; ++i, x += xd)
@@ -208,46 +284,36 @@ void renderGrid(int N, double m)
 
 void initGL()
 {
-	mat4d camera = vmath::perspective_matrix(FoV, Aspect, zNear, zFar);
-
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glEnable(GL_LINE_SMOOTH);
 	glLineWidth(0.75f);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixd(camera);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	gridList = glGenLists(1);
 	glNewList(gridList, GL_COMPILE);
-	renderGrid(GridCount, GridHeight);
+	renderGrid(GridCount, GridWidth);
 	glEndList();
 }
 
-void renderScene(Skeleton &skel, const mat4d &cameraMatrix)
+void renderScene(Skeleton &skel, const Camera &cam)
 {
 	glDisable(GL_TEXTURE_2D);
 
-	mat4d camera = vmath::perspective_matrix(FoV, Aspect, zNear, zFar);
-
 	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixd(camera);
+	glLoadMatrixd(cam.getProjection());
 
 	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixd(cameraMatrix);
+	glLoadMatrixd(cam.getModelView());
 
 	glCallList(gridList);
 	glColor3f(1.0f, 1.0f, 1.0f);
 	skel.render();
 }
 
-void renderOverlay(const CameraGrip &camGrip)
+void renderOverlay(const Camera &cam)
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -255,15 +321,15 @@ void renderOverlay(const CameraGrip &camGrip)
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	camGrip.render();
+	cam.render();
 }
 
-void render(Skeleton &skel, const mat4d &cameraMatrix, const CameraGrip &camGrip)
+void render(Skeleton &skel, const Camera &cam)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	renderScene(skel, cameraMatrix);
-	renderOverlay(camGrip);
+	renderScene(skel, cam);
+	renderOverlay(cam);
 }
 
 #ifdef _WIN32
@@ -295,14 +361,29 @@ int main(int argc, char *argv[])
 		TextRenderer textRenderer;
 		gTextRenderer = &textRenderer;
 
-		CameraGrip cameraGrip(800, 600);
+		CameraAzimuthElevation cameraPerspective(800, 600);
+		CameraOrtho cameraX(800, 600, 0);
+		CameraOrtho cameraY(800, 600, 1);
+		CameraOrtho cameraZ(800, 600, 2);
+
+		Camera *cam = &cameraPerspective;
+
 		bool dragging = false;
 		while (true)
 		{
-			cameraGrip.update();
-			render(skel, cameraGrip.getCameraMatrix(), cameraGrip);
+			cam->update();
+			render(skel, *cam);
 
 			glfwSwapBuffers();
+
+			if (glfwGetKey(GLFW_KEY_KP_7))
+				cam = &cameraY;
+			else if (glfwGetKey(GLFW_KEY_KP_1))
+				cam = &cameraZ;
+			else if (glfwGetKey(GLFW_KEY_KP_3))
+				cam = &cameraX;
+			else if (glfwGetKey(GLFW_KEY_KP_5))
+				cam = &cameraPerspective;
 			
 			if (glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED))
 				break;
