@@ -376,7 +376,8 @@ int main(int argc, char *argv[])
 			cam->update();
 			render(skel, *cam);
 
-			skel.iterateIK();
+			//skel.iterateIK();
+			skel.solveIK();
 
 			glfwSwapBuffers();
 

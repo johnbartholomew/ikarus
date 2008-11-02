@@ -60,6 +60,28 @@ void Skeleton::iterateIK()
 
 void Skeleton::solveIK()
 {
+	const double TargetError = 0.0001;
+	const int MaxTries = 50;
+	int tries = 0;
+
+	vec3d target = targetPos;
+
+	// if the target is further away than we can reach, then pretend it's just within reach but in the same direction
+	double totalLen = 0.0;
+	for (std::vector<Bone>::const_iterator it = bones.begin(); it != bones.end(); ++it)
+		totalLen += it->length;
+	double targetDist = length(target);
+	if (targetDist > totalLen)
+		target *= (totalLen / targetDist);
+
+	vec3d tip;
+	vec3d delta;
+	do
+	{
+		tip = ikStep(0, vec3d(0.0, 0.0, 0.0));
+		delta = tip - target;
+		++tries;
+	} while ((tries < MaxTries) && (dot(delta, delta) > TargetError));
 }
 
 vec3d Skeleton::ikStep(int boneIdx, const vec3d &root)
@@ -71,6 +93,7 @@ vec3d Skeleton::ikStep(int boneIdx, const vec3d &root)
 
 	if (b.childrenEnd > b.childrenBegin)
 	{
+		// can currently only deal with exactly 0 or 1 children
 		assert(b.childrenEnd - b.childrenBegin == 1);
 		for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
 			tip = ikStep(i, end);
@@ -85,7 +108,10 @@ vec3d Skeleton::ikStep(int boneIdx, const vec3d &root)
 	v0 = normalize(v0);
 	v1 = normalize(v1);
 
-	double angle = std::acos(dot(v0, v1));
+	double v0dotv1 = dot(v0, v1);
+	if (abs(v0dotv1) >= 0.9999)
+		return tip;
+	double angle = std::acos(v0dotv1);
 	if (abs(angle) < 0.0001)
 		return tip;
 
@@ -93,8 +119,13 @@ vec3d Skeleton::ikStep(int boneIdx, const vec3d &root)
 
 	mat4d rot = rotation_matrix(angle, axis);
 
+	assert(b.orient.hasvalidfloats());
 	b.orient = transform_vector(rot, b.orient);
+	assert(b.orient.hasvalidfloats());
+	
+	assert(tip.hasvalidfloats());
 	tip = root + transform_vector(rot, tip - root);
+	assert(tip.hasvalidfloats());
 
 	// re-normalize to the correct length
 	b.orient = b.orient * (b.length / length(b.orient));
