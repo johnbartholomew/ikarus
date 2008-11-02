@@ -46,7 +46,50 @@ void Skeleton::loadFromFile(const std::string &fname)
 
 void Skeleton::render()
 {
+	glColor3f(1.0f, 1.0f, 1.0f);
 	renderBone(0, vec3d(0.0, 0.0, 0.0));
+	glColor3f(0.0f, 1.0f, 0.0f);
+	renderTarget();
+}
+
+void Skeleton::renderTarget()
+{
+	glBegin(GL_LINES);
+	{
+		const double size = 0.5;
+		const vec3d a(size, 0.0, 0.0);
+		const vec3d b(0.0, size, 0.0);
+		const vec3d c(0.0, 0.0, size);
+
+		const vec3d v0 = targetPos - b;
+		const vec3d v1 = targetPos - a;
+		const vec3d v2 = targetPos - c;
+		const vec3d v3 = targetPos + a;
+		const vec3d v4 = targetPos + c;
+		const vec3d v5 = targetPos + b;
+
+		glVertex3dv(v0); glVertex3dv(v5);
+		glVertex3dv(v1); glVertex3dv(v3);
+		glVertex3dv(v2); glVertex3dv(v4);
+
+#if 0
+		glVertex3dv(v0); glVertex3dv(v1);
+		glVertex3dv(v0); glVertex3dv(v2);
+		glVertex3dv(v0); glVertex3dv(v3);
+		glVertex3dv(v0); glVertex3dv(v4);
+
+		glVertex3dv(v1); glVertex3dv(v2);
+		glVertex3dv(v2); glVertex3dv(v3);
+		glVertex3dv(v3); glVertex3dv(v4);
+		glVertex3dv(v4); glVertex3dv(v1);
+
+		glVertex3dv(v1); glVertex3dv(v5);
+		glVertex3dv(v1); glVertex3dv(v5);
+		glVertex3dv(v1); glVertex3dv(v5);
+		glVertex3dv(v1); glVertex3dv(v5);
+#endif
+	}
+	glEnd();
 }
 
 void Skeleton::renderBone(int idx, const vec3d &root)
@@ -97,9 +140,6 @@ void Skeleton::renderBone(int idx, const vec3d &root)
 		glVertex3dv(v2); glVertex3dv(v5);
 		glVertex3dv(v3); glVertex3dv(v5);
 		glVertex3dv(v4); glVertex3dv(v5);
-
-		//glVertex3d(root[0], root[1], root[2]);
-		//glVertex3d(end[0], end[1], end[2]);
 	}
 	glEnd();
 

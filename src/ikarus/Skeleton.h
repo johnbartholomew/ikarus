@@ -15,10 +15,12 @@ public:
 	};
 
 	std::vector<Bone> bones;
+	vec3d targetPos;
 
 	void render();
 	void loadFromFile(const std::string &fname);
 private:
+	void renderTarget();
 	void renderBone(int idx, const vec3d &root);
 };
 

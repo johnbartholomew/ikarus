@@ -7,6 +7,7 @@ const double Aspect = 4.0 / 3.0;
 const double FoV = 40.0 * (M_PI/180.0);
 const double zNear = 0.1;
 const double zFar = 100.0;
+const double CameraDistWheelScale = 1.5;
 
 const int GridCount = 10;
 const double GridHeight = 20.0;
@@ -25,6 +26,7 @@ class CameraGrip
 public:
 	CameraGrip(int w, int h)
 		:	dragging(false),
+			cameraDist(CameraDistance),
 			screenCentre(w/2, h/2),
 			screenRadius(std::min(w, h)/2.0),
 			az(0.0), el(0.0), az0(0.0), el0(0.0)
@@ -33,6 +35,9 @@ public:
 
 	void update()
 	{
+		int wheel = glfwGetMouseWheel();
+		cameraDist = CameraDistance - wheel*CameraDistWheelScale;
+
 		vec2i mousePos;
 		glfwGetMousePos(&mousePos.x, &mousePos.y);
 		if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
@@ -86,7 +91,7 @@ public:
 
 	mat4d getCameraMatrix() const
 	{
-		return vmath::translation_matrix(0.0, 0.0, -CameraDistance) * vmath::azimuth_elevation_matrix(az, el);
+		return vmath::translation_matrix(0.0, -GridHeight/4.0, -cameraDist) * vmath::azimuth_elevation_matrix(az, el);
 	}
 
 	void render() const
@@ -122,6 +127,7 @@ public:
 
 private:
 	bool dragging;
+	double cameraDist;
 	vec2i screenCentre;
 	double screenRadius;
 
@@ -170,36 +176,32 @@ void renderGrid(int N, double m)
 	glColor3f(0.7f, 0.2f, 0.2f);
 	glBegin(GL_LINES);
 	x = a;
-	for (int i = 0; i <= N; ++i)
-	{
-		// y/z plane (left)
-		glVertex3d(a, 0.0, x); glVertex3d(a, m, x); // lines bottom-to-top
-		glVertex3d(a, x+b, a); glVertex3d(a, x+b, b); // lines back-to-front
-		x += xd;
-	}
+	for (int i = 0; i <= N; ++i, x += xd)
+	{	glVertex3d(a, 0.0, x); glVertex3d(a, b, x); }// y/z plane (left); lines bottom-to-top
+	x = a;
+	for (int i = 0; i <= N/2; ++i, x += xd)
+	{	glVertex3d(a, x+b, a); glVertex3d(a, x+b, b); }// y/z plane (left); lines back-to-front
 	glEnd();
-	
+
 	glColor3f(0.2f, 0.7f, 0.2f);
 	glBegin(GL_LINES);
 	x = a;
-	for (int i = 0; i <= N; ++i)
-	{
-		// x/y plane (back)
-		glVertex3d(a, x+b, a); glVertex3d(b, x+b, a); // lines left-to-right
-		glVertex3d(x, 0.0, a); glVertex3d(x, m, a); // lines bottom-to-top
-		x += xd;
-	}
+	for (int i = 0; i <= N; ++i, x += xd)
+	{	glVertex3d(x, 0.0, a); glVertex3d(x, b, a); }// x/y plane (back); lines bottom-to-top
+
+	x = a;
+	for (int i = 0; i <= N/2; ++i, x += xd)
+	{	glVertex3d(a, x+b, a); glVertex3d(b, x+b, a); }// x/y plane (back); lines left-to-right
 	glEnd();
 
 	glColor3f(0.2f, 0.2f, 0.7f);
 	glBegin(GL_LINES);
 	x = a;
-	for (int i = 0; i <= N; ++i)
+	for (int i = 0; i <= N; ++i, x += xd)
 	{
 		// x/z plane (bottom)
 		glVertex3d(a, 0.0, x); glVertex3d(b, 0.0, x); // lines left-to-right
 		glVertex3d(x, 0.0, a); glVertex3d(x, 0.0, b); // lines back-to-front
-		x += xd;
 	}
 	glEnd();
 }
@@ -212,6 +214,7 @@ void initGL()
 	glEnable(GL_LINE_SMOOTH);
 	glLineWidth(0.75f);
 	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixd(camera);
@@ -284,6 +287,7 @@ int main(int argc, char *argv[])
 
 		Skeleton skel;
 		skel.loadFromFile("skeleton.txt");
+		skel.targetPos = vec3d(3.0, 7.0, 5.0);
 
 		Font font;
 		font.loadFromFile("arial-rounded-18.fnt");
