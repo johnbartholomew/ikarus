@@ -4,7 +4,7 @@
 
 const double CameraDistance = 30.0;
 const double Aspect = 4.0 / 3.0;
-const double FoV = 40.0; // degrees
+const double FoV = 40.0 * (M_PI/180.0);
 const double zNear = 0.1;
 const double zFar = 100.0;
 
@@ -18,6 +18,153 @@ TextRenderer *gTextRenderer = 0;
 Font *gFont = 0;
 
 GLuint gridList;
+
+
+class CameraGrip
+{
+public:
+	CameraGrip(int w, int h)
+		:	dragging(false),
+			screenCentre(w/2, h/2),
+			screenRadius(std::min(w, h)/2.0),
+			rot(vmath::identityq<double>())
+	{
+	}
+
+	void update()
+	{
+		vec2i mousePos;
+		glfwGetMousePos(&mousePos.x, &mousePos.y);
+		if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+		{
+			if (!dragging)
+			{
+				dragging = true;
+				startDrag(mousePos);
+			}
+			else
+				updateDrag(mousePos);
+		}
+		else
+		{
+			if (dragging)
+			{
+				updateDrag(mousePos);
+				dragging = false;
+			}
+		}
+	}
+
+	void startDrag(const vec2i &pos)
+	{
+		pt0 = pt1 = screenToSphere(pos);
+		rot0 = rot;
+	}
+	
+	void updateDrag(const vec2i &pos)
+	{
+		pt1 = screenToSphere(pos);
+
+		/*
+		vec3d a, b;
+
+		a = constrainToAxis(startPt, 1);
+		b = constrainToAxis(pt, 1);
+		quatd dragAz(cross(a, b), dot(a, b));
+
+		a = constrainToAxis(startPt, 0);
+		b = constrainToAxis(pt, 0);
+		quatd dragEl(cross(a, b), dot(a, b));
+
+		quatd dragRot = dragAz * dragEl;
+		*/
+
+		quatd dragRot(cross(pt0, pt1), dot(pt0, pt1));
+
+		rot = dragRot * rot0;
+	}
+
+	mat4d getCameraMatrix() const
+	{
+		return vmath::translation_matrix(0.0, 0.0, -CameraDistance) * quat_to_mat4(rot);
+	}
+
+	void render() const
+	{
+		if (dragging)
+		{
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_BLEND);
+
+			vec2i pos0 = sphereToScreen(pt0);
+			vec2i pos1 = sphereToScreen(pt1);
+
+			glPointSize(5.0);
+			glBegin(GL_POINTS);
+			glColor3f(0.0f, 1.0f, 0.0f);
+			glVertex2i(pos0.x, pos0.y);
+
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glVertex2i(pos1.x, pos1.y);
+			glEnd();
+
+			glColor3f(0.7f, 0.7f, 0.7f);
+			glBegin(GL_LINE_STRIP);
+			const int N = 30;
+			for (int i = 0; i <= N; ++i)
+			{
+				double a = (double)i / (double)N;
+				/*
+				quatd r = slerp(rot0, rot, a) * inverse(rot0);
+				vec3d v = r * pt0;
+				vec2i p = sphereToScreen(v);
+				*/
+				vec2i p = sphereToScreen(slerp(quatd(pt0, 0.0), quatd(pt1, 0.0), a).v);
+				glVertex2i(p.x, p.y);
+			}
+			glEnd();
+		}
+	}
+
+private:
+	bool dragging;
+	vec2i screenCentre;
+	double screenRadius;
+
+	vec3d pt0, pt1;
+	quatd rot0, rot;
+
+	// constrains a point on the unit sphere to the given axis (0 = x, 1 = y, 2 = z)
+	vec3d constrainToAxis(vec3d pt, int axis) const
+	{
+		pt[axis] = 0.0;
+		return normalize(pt);
+	}
+
+	vec3d screenToSphere(vec2i pos) const
+	{
+		pos -= screenCentre;
+		pos.y *= -1;
+
+		vec3d v(pos.x / screenRadius, pos.y / screenRadius, 0.0);
+
+		double r = v.x*v.x + v.y*v.y;
+		if (r > 1.0) // normalize v
+			v *= vmath::rsqrt(r);
+		else
+			v.z = std::sqrt(1.0 - r);
+
+		return v;
+	}
+
+	vec2i sphereToScreen(const vec3d &pt) const
+	{
+		vec2i pos((int)(pt.x*screenRadius), (int)(pt.y*screenRadius));
+		pos.y *= -1;
+		pos += screenCentre;
+		return pos;
+	}
+};
 
 void renderGrid(int N, double m)
 {
@@ -98,61 +245,29 @@ void renderScene(Skeleton &skel, const mat4d &cameraMatrix)
 	skel.render();
 }
 
-void renderOverlay()
+void renderOverlay(const CameraGrip &camGrip)
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
+
 	glLoadIdentity();
 	glTranslated(100.0, 100.0, 0.0);
-
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	gTextRenderer->drawText(gFont, "Hello, world!");
+
+	glLoadIdentity();
+	camGrip.render();
 }
 
-void render(Skeleton &skel, const mat4d &cameraMatrix)
+void render(Skeleton &skel, const mat4d &cameraMatrix, const CameraGrip &camGrip)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	renderScene(skel, cameraMatrix);
-	renderOverlay();
+	renderOverlay(camGrip);
 }
-
-class CameraGrip
-{
-public:
-	CameraGrip()
-		:	mouseOrigin(0, 0),
-			elevation0(0), azimuth0(0),
-			elevation(0), azimuth(0)
-	{
-	}
-
-	void startDrag(const vec2i &pos)
-	{
-		mouseOrigin = pos;
-		elevation0 = elevation;
-		azimuth0 = azimuth;
-	}
-	
-	void updateDrag(const vec2i &pos)
-	{
-		vec2i delta = pos - mouseOrigin;
-		//elevation = elevation0 + (double)(delta.y / 50.0);
-		//azimuth = azimuth0 + (double)(delta.x / 50.0);
-	}
-
-	mat4d getCameraMatrix() const
-	{
-		return vmath::euler(azimuth, elevation, 0.0) * vmath::translation_matrix(0.0, 0.0, -CameraDistance);
-	}
-
-private:
-	vec2i mouseOrigin;
-	double elevation0, azimuth0;
-	double elevation, azimuth;
-};
 
 #ifdef _WIN32
 int APIENTRY wWinMain(HINSTANCE hPrevInstance, HINSTANCE hInstance, LPWSTR cmdLine, int nShowCmd)
@@ -182,32 +297,12 @@ int main(int argc, char *argv[])
 		TextRenderer textRenderer;
 		gTextRenderer = &textRenderer;
 
-		CameraGrip cameraGrip;
+		CameraGrip cameraGrip(800, 600);
 		bool dragging = false;
 		while (true)
 		{
-			vec2i mousePos;
-			glfwGetMousePos(&mousePos.x, &mousePos.y);
-			if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-			{
-				if (!dragging)
-				{
-					dragging = true;
-					cameraGrip.startDrag(mousePos);
-				}
-				else
-					cameraGrip.updateDrag(mousePos);
-			}
-			else
-			{
-				if (dragging)
-				{
-					cameraGrip.updateDrag(mousePos);
-					dragging = false;
-				}
-			}
-
-			render(skel, cameraGrip.getCameraMatrix());
+			cameraGrip.update();
+			render(skel, cameraGrip.getCameraMatrix(), cameraGrip);
 
 			glfwSwapBuffers();
 			
