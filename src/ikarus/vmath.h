@@ -67,6 +67,17 @@ namespace detail {
 	}
 }
 
+#define MOP_M_ISVALID_TEMPLATE(CLASS, COUNT) \
+	bool hasvalidfloats () const \
+	{ \
+		for (int i = 0; i < (COUNT); ++i) \
+		{ \
+			if (!((*this)[i] == (*this)[i])) \
+				return false; \
+		} \
+		return true; \
+	}
+
 #define MOP_M_CLASS_TEMPLATE(CLASS, OP, COUNT) \
 	CLASS & operator OP (const CLASS& rhs)  \
 	{ \
@@ -104,6 +115,7 @@ namespace detail {
 	}
 
 #define COMMON_OPERATORS(CLASS, COUNT) \
+	MOP_M_ISVALID_TEMPLATE(CLASS, COUNT) \
 	MOP_M_CLASS_TEMPLATE(CLASS, +=, COUNT) \
 	MOP_M_CLASS_TEMPLATE(CLASS, -=, COUNT) \
 	/*no *= as this is not the same for vectors and matrices */ \
