@@ -53,10 +53,54 @@ void Skeleton::renderBone(int idx, const vec3d &root)
 {
 	const Bone &b = bones[idx];
 	const vec3d end = b.orient + root;
+
+	const double len = length(b.orient);
+	const double offset = 0.1 * len;
+	const double invSqrt2 = 0.70710678118654746;
 	
+	const vec3d unitX(1.0, 0.0, 0.0);
+	const vec3d unitY(0.0, 1.0, 0.0);
+	const vec3d unitZ(0.0, 0.0, 1.0);
+
+	const vec3d dir(normalize(b.orient));
+
 	glBegin(GL_LINES);
-		glVertex3d(root[0], root[1], root[2]);
-		glVertex3d(end[0], end[1], end[2]);
+	{
+		vec3d spur0;
+		if (abs(dot(dir, unitX)) < 0.8)
+			spur0 = cross(dir, unitX);
+		else
+			spur0 = cross(dir, unitZ);
+		vec3d spur1 = cross(spur0, dir);
+
+		spur0 *= offset;
+		spur1 *= offset;
+
+		const vec3d v0 = root - dir*offset;
+		const vec3d v1 = root - spur0;
+		const vec3d v2 = root + spur1;
+		const vec3d v3 = root + spur0;
+		const vec3d v4 = root - spur1;
+		const vec3d v5 = end;
+
+		glVertex3dv(v0); glVertex3dv(v1);
+		glVertex3dv(v0); glVertex3dv(v2);
+		glVertex3dv(v0); glVertex3dv(v3);
+		glVertex3dv(v0); glVertex3dv(v4);
+
+		glVertex3dv(v1); glVertex3dv(v2);
+		glVertex3dv(v2); glVertex3dv(v3);
+		glVertex3dv(v3); glVertex3dv(v4);
+		glVertex3dv(v4); glVertex3dv(v1);
+		
+		glVertex3dv(v1); glVertex3dv(v5);
+		glVertex3dv(v2); glVertex3dv(v5);
+		glVertex3dv(v3); glVertex3dv(v5);
+		glVertex3dv(v4); glVertex3dv(v5);
+
+		//glVertex3d(root[0], root[1], root[2]);
+		//glVertex3d(end[0], end[1], end[2]);
+	}
 	glEnd();
 
 	for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
