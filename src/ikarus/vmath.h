@@ -745,6 +745,55 @@ inline mat4<T> rotation_matrix(const T angle, const T x, const T y, const T z)
 	return rotation_matrix(angle, vec3<T>(x, y, z));
 }
 
+template <typename T>
+inline mat4<T> azimuth_elevation_matrix(const T az, const T el)
+{
+	const T caz = cos(az);
+	const T saz = sin(az);
+	const T cel = cos(el);
+	const T sel = sin(el);
+
+	// elevation * azimuth
+	return mat4<T>(
+		   caz  ,  0.0,    saz  ,  0.0,
+		-saz*sel,  cel,  sel*caz,  0.0,
+		-saz*cel, -sel,  cel*caz,  0.0,
+		   0.0  ,  0.0,     0.0 ,  1.0
+	);
+
+/*
+#if 0
+	// the matrix for azimuthal rotation (a rotation around the y axis)
+	return mat4<T>(
+		 caz,  0.0  ,  saz  ,  0.0,
+		 0.0,  1.0  ,  0.0  ,  0.0,
+		-saz,  0.0  ,  caz  ,  0.0,
+		 0.0,  0.0  ,  0.0  ,  1.0
+	);
+#endif
+
+#if 0
+	// the matrix for elivation rotation (a rotation around the x axis)
+	return mat4<T>(
+		 1.0,  0.0  ,  0.0  ,  0.0,
+		 0.0,  cel  ,  sel  ,  0.0,
+		 0.0, -sel  ,  cel  ,  0.0,
+		 0.0,  0.0  ,  0.0  ,  1.0
+	);
+#endif
+
+#if 0
+	// the matrix for both at once (nb: *not* the same as the two matrices multiplied together)
+	return mat4<T>(
+		 caz,  sel*saz,  cel*saz,  0.0,
+		 0.0,    cel  ,   -sel  ,  0.0,
+		-saz,  sel*caz,  cel*caz,  0.0,
+		 0.0,    0.0  ,    0.0  ,  1.0
+	);
+#endif
+*/
+}
+
 // Constructs a shear-matrix that shears component i by factor with
 // Respect to component j.
 template <typename T> 
