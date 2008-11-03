@@ -35,6 +35,7 @@
 
 // global internal headers
 
+#include "refvector.h"
 #include "smartptr.h"
 #include "vmath.h"
 
