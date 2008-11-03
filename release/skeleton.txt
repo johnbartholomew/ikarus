@@ -1,5 +1,0 @@
-skeleton
-bonecount 3
-bone  armUpper  0  5  0    -1     1   2
-bone  armLower  0  3  0     0     2   3
-bone  hand      1  0  0     1     0   0
