@@ -240,6 +240,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\ikarus\refvector.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ikarus\Skeleton.h"
 				>
 			</File>
