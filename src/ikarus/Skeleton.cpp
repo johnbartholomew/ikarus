@@ -109,8 +109,13 @@ vec3d Skeleton::ikStep(int boneIdx, const vec3d &root)
 	v1 = normalize(v1);
 
 	double v0dotv1 = dot(v0, v1);
-	if (abs(v0dotv1) >= 0.9999)
+	if (v0dotv1 > 1.0)
+		// 0 degrees
 		return tip;
+	if (v0dotv1 < -1.0)
+		// 180 degrees with some floating point errors
+		v0dotv1 = -1.0;
+
 	double angle = std::acos(v0dotv1);
 	if (abs(angle) < 0.0001)
 		return tip;
