@@ -354,8 +354,7 @@ int main(int argc, char *argv[])
 		initGL();
 
 		Skeleton skel;
-		skel.loadFromFile("skeleton.txt");
-		skel.targetPos = vec3d(3.0, 7.0, 5.0);
+		skel.loadFromFile("human.skl");
 
 		Font font;
 		font.loadFromFile("arial-rounded-18.fnt");
@@ -375,9 +374,6 @@ int main(int argc, char *argv[])
 		{
 			cam->update();
 			render(skel, *cam);
-
-			//skel.iterateIK();
-			skel.solveIK();
 
 			glfwSwapBuffers();
 
@@ -404,6 +400,7 @@ int main(int argc, char *argv[])
 			if (glfwGetKey('Z'))
 				delta.y -= 1.0;
 
+#if 0
 			if (delta.x != 0.0 || delta.y != 0.0 || delta.z != 0.0)
 				skel.targetPos += normalize(delta) * MoveStep;
 
@@ -415,6 +412,7 @@ int main(int argc, char *argv[])
 			
 			if (skel.targetPos.z > GridWidth/2.0) skel.targetPos.z = GridWidth/2.0;
 			if (skel.targetPos.z < -GridWidth/2.0) skel.targetPos.z = -GridWidth/2.0;
+#endif
 			
 			if (glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED))
 				break;

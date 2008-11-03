@@ -4,7 +4,9 @@
 void Skeleton::loadFromFile(const std::string &fname)
 {
 	// reset the existing skeleton
-	bones.clear();
+	segments.clear();
+	numBones = 0;
+	numEffectors = 0;
 
 	std::ifstream fs(fname.c_str(), std::ios::in);
 	std::string ln;
@@ -24,16 +26,21 @@ void Skeleton::loadFromFile(const std::string &fname)
 		{
 			int n;
 			ss >> n;
-			bones.reserve(n);
+			segments.reserve(n);
 		}
 		else if (cmd == "bone")
 		{
-			Bone bone;
-			ss >> bone.name >> bone.orient[0] >> bone.orient[1] >> bone.orient[2] >> bone.parent >> bone.childrenBegin >> bone.childrenEnd;
-			if (bone.childrenEnd < bone.childrenBegin)
+			Segment b;
+			b.type = Segment::Bone;
+			ss >> b.name >> b.worldOrigin.x >> b.worldOrigin.y >> b.worldOrigin.z >> b.displayVector.x >> b.displayVector.y >> b.displayVector.z >> b.parent >> b.childrenBegin >> b.childrenEnd;
+			if (b.childrenEnd < b.childrenBegin)
 				throw std::runtime_error("Invalid bone command in skeleton file.");
-			bone.length = length(bone.orient);
-			bones.push_back(bone);
+			segments.push_back(b);
+
+			++numBones;
+
+			if (b.childrenBegin >= b.childrenEnd)
+				++numEffectors;
 		}
 		else if (cmd == "")
 		{
@@ -43,16 +50,153 @@ void Skeleton::loadFromFile(const std::string &fname)
 			throw std::runtime_error("Invalid command in skeleton file.");
 	}
 	fs.close();
+
+	segments[0].type = Segment::Root;
+
+	// add an extra segment for each end-effector
+	segments.reserve(segments.size() + numEffectors);
+	for (int i = 0; i < numBones; ++i)
+	{
+		Segment &b = segments[i];
+		if (b.childrenBegin >= b.childrenEnd)
+		{
+			b.childrenBegin = segments.size();
+			b.childrenEnd = segments.size() + 1;
+			
+			Segment effector;
+			effector.name = b.name + "-target";
+			effector.worldOrigin = b.worldOrigin + b.displayVector;
+			effector.displayVector = vec3d(0.0, 0.0, 0.0);
+			effector.type = Segment::Effector;
+			effector.parent = i;
+			effector.childrenBegin = segments.size();
+			effector.childrenEnd = segments.size();
+			segments.push_back(effector);
+		}
+	}
+
+	// calculate the relative origins of each bone
+	segments[0].origin = segments[0].worldOrigin;
+	for (int i = 1; i < (int)segments.size(); ++i)
+	{
+		Segment &b = segments[i];
+		Segment &p = segments[b.parent];
+		b.origin = b.worldOrigin - p.worldOrigin;
+	}
 }
 
-void Skeleton::render()
+void Skeleton::render() const
 {
 	glColor3f(1.0f, 1.0f, 1.0f);
-	renderBone(0, vec3d(0.0, 0.0, 0.0));
-	glColor3f(1.0f, 1.0f, 0.0f);
-	renderTarget();
+	renderSegment(0, vec3d(0.0, 0.0, 0.0));
 }
 
+void Skeleton::renderSegment(int idx, const vec3d &base) const
+{
+	const Segment &b = segments[idx];
+	if (b.type == Segment::Effector)
+		renderEffector(b, base);
+	else
+		renderBone(b, base);
+}
+
+void Skeleton::renderBone(const Segment &b, const vec3d &base) const
+{
+	const vec3d head = base + b.origin;
+	const vec3d end = head + b.displayVector;
+
+	const double len = length(b.displayVector);
+	const double offset = 0.1 * len;
+	const double invSqrt2 = 0.70710678118654746;
+	
+	const vec3d unitX(1.0, 0.0, 0.0);
+	const vec3d unitY(0.0, 1.0, 0.0);
+	const vec3d unitZ(0.0, 0.0, 1.0);
+
+	const vec3d dir(normalize(b.displayVector));
+
+	if (b.type == Segment::Root)
+		glColor3f(1.0f, 0.0f, 0.0f);
+	else
+		glColor3f(1.0f, 1.0f, 1.0f);
+	glBegin(GL_LINES);
+	{
+		vec3d spur0;
+		if (abs(dot(dir, unitX)) < 0.8)
+			spur0 = cross(dir, unitX);
+		else
+			spur0 = cross(dir, unitZ);
+		vec3d spur1 = cross(spur0, dir);
+
+		spur0 *= offset;
+		spur1 *= offset;
+
+		const vec3d v0 = head - dir*offset;
+		const vec3d v1 = head - spur0;
+		const vec3d v2 = head + spur1;
+		const vec3d v3 = head + spur0;
+		const vec3d v4 = head - spur1;
+		const vec3d v5 = end;
+
+		glVertex3dv(v0); glVertex3dv(v1);
+		glVertex3dv(v0); glVertex3dv(v2);
+		glVertex3dv(v0); glVertex3dv(v3);
+		glVertex3dv(v0); glVertex3dv(v4);
+
+		glVertex3dv(v1); glVertex3dv(v2);
+		glVertex3dv(v2); glVertex3dv(v3);
+		glVertex3dv(v3); glVertex3dv(v4);
+		glVertex3dv(v4); glVertex3dv(v1);
+		
+		glVertex3dv(v1); glVertex3dv(v5);
+		glVertex3dv(v2); glVertex3dv(v5);
+		glVertex3dv(v3); glVertex3dv(v5);
+		glVertex3dv(v4); glVertex3dv(v5);
+	}
+	glEnd();
+
+	for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
+		renderSegment(i, head);
+}
+
+void Skeleton::renderEffector(const Segment &e, const vec3d &base) const
+{
+	const vec3d pos = base + e.origin;
+
+	glColor3f(1.0f, 1.0f, 0.0f);
+	glBegin(GL_LINES);
+	{
+		const double size = 0.25;
+		const vec3d a(size, 0.0, 0.0);
+		const vec3d b(0.0, size, 0.0);
+		const vec3d c(0.0, 0.0, size);
+
+		const vec3d v0 = pos - b;
+		const vec3d v1 = pos - a;
+		const vec3d v2 = pos - c;
+		const vec3d v3 = pos + a;
+		const vec3d v4 = pos + c;
+		const vec3d v5 = pos + b;
+
+		glVertex3dv(v0); glVertex3dv(v1);
+		glVertex3dv(v0); glVertex3dv(v2);
+		glVertex3dv(v0); glVertex3dv(v3);
+		glVertex3dv(v0); glVertex3dv(v4);
+
+		glVertex3dv(v1); glVertex3dv(v2);
+		glVertex3dv(v2); glVertex3dv(v3);
+		glVertex3dv(v3); glVertex3dv(v4);
+		glVertex3dv(v4); glVertex3dv(v1);
+
+		glVertex3dv(v1); glVertex3dv(v5);
+		glVertex3dv(v2); glVertex3dv(v5);
+		glVertex3dv(v3); glVertex3dv(v5);
+		glVertex3dv(v4); glVertex3dv(v5);
+	}
+	glEnd();
+}
+
+#if 0
 void Skeleton::iterateIK()
 {
 	ikStep(0, vec3d(0.0, 0.0, 0.0));
@@ -179,58 +323,4 @@ void Skeleton::renderTarget()
 	}
 	glEnd();
 }
-
-void Skeleton::renderBone(int idx, const vec3d &root)
-{
-	const Bone &b = bones[idx];
-	const vec3d end = b.orient + root;
-
-	const double len = length(b.orient);
-	const double offset = 0.1 * len;
-	const double invSqrt2 = 0.70710678118654746;
-	
-	const vec3d unitX(1.0, 0.0, 0.0);
-	const vec3d unitY(0.0, 1.0, 0.0);
-	const vec3d unitZ(0.0, 0.0, 1.0);
-
-	const vec3d dir(normalize(b.orient));
-
-	glBegin(GL_LINES);
-	{
-		vec3d spur0;
-		if (abs(dot(dir, unitX)) < 0.8)
-			spur0 = cross(dir, unitX);
-		else
-			spur0 = cross(dir, unitZ);
-		vec3d spur1 = cross(spur0, dir);
-
-		spur0 *= offset;
-		spur1 *= offset;
-
-		const vec3d v0 = root - dir*offset;
-		const vec3d v1 = root - spur0;
-		const vec3d v2 = root + spur1;
-		const vec3d v3 = root + spur0;
-		const vec3d v4 = root - spur1;
-		const vec3d v5 = end;
-
-		glVertex3dv(v0); glVertex3dv(v1);
-		glVertex3dv(v0); glVertex3dv(v2);
-		glVertex3dv(v0); glVertex3dv(v3);
-		glVertex3dv(v0); glVertex3dv(v4);
-
-		glVertex3dv(v1); glVertex3dv(v2);
-		glVertex3dv(v2); glVertex3dv(v3);
-		glVertex3dv(v3); glVertex3dv(v4);
-		glVertex3dv(v4); glVertex3dv(v1);
-		
-		glVertex3dv(v1); glVertex3dv(v5);
-		glVertex3dv(v2); glVertex3dv(v5);
-		glVertex3dv(v3); glVertex3dv(v5);
-		glVertex3dv(v4); glVertex3dv(v5);
-	}
-	glEnd();
-
-	for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
-		renderBone(i, end);
-}
+#endif
