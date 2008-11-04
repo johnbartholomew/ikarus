@@ -7,7 +7,7 @@ const double Aspect = 4.0 / 3.0;
 const double FoV = 40.0 * (M_PI/180.0);
 const double zNear = 0.1;
 const double zFar = 100.0;
-const double CameraDistWheelScale = 1.5;
+const double CameraDistWheelScale = 1.1;
 
 const int GridCount = 10;
 const double GridWidth = 20.0;
@@ -45,7 +45,7 @@ public:
 	{
 		int wheel = glfwGetMouseWheel();
 		// nb: if you change this change the CameraOrtho initializer
-		scale = (GridWidth/2.0) - wheel*CameraDistWheelScale;
+		scale = (GridWidth/2.0) * std::pow(CameraDistWheelScale, -wheel);
 	}
 
 	virtual void render() const {}
@@ -109,7 +109,7 @@ public:
 	virtual void update()
 	{
 		int wheel = glfwGetMouseWheel();
-		cameraDist = CameraDistance - wheel*CameraDistWheelScale;
+		cameraDist = CameraDistance * std::pow(CameraDistWheelScale, -wheel);
 
 		vec2i mousePos;
 		glfwGetMousePos(&mousePos.x, &mousePos.y);
