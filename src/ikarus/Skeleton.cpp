@@ -94,10 +94,13 @@ void Skeleton::render() const
 void Skeleton::renderSegment(int idx, const vec3d &base) const
 {
 	const Segment &b = segments[idx];
-	if (b.type == Segment::Effector)
-		renderEffector(b, base);
+	if (b.type == Segment::Effector || b.type == Segment::Root)
+		renderPoint(b, base);
 	else
 		renderBone(b, base);
+	
+	for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
+		renderSegment(i, base + b.origin);
 }
 
 void Skeleton::renderBone(const Segment &b, const vec3d &base) const
@@ -115,10 +118,7 @@ void Skeleton::renderBone(const Segment &b, const vec3d &base) const
 
 	const vec3d dir(normalize(b.displayVector));
 
-	if (b.type == Segment::Root)
-		glColor3f(1.0f, 0.0f, 0.0f);
-	else
-		glColor3f(1.0f, 1.0f, 1.0f);
+	glColor3f(1.0f, 1.0f, 1.0f);
 	glBegin(GL_LINES);
 	{
 		vec3d spur0;
@@ -154,16 +154,16 @@ void Skeleton::renderBone(const Segment &b, const vec3d &base) const
 		glVertex3dv(v4); glVertex3dv(v5);
 	}
 	glEnd();
-
-	for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
-		renderSegment(i, head);
 }
 
-void Skeleton::renderEffector(const Segment &e, const vec3d &base) const
+void Skeleton::renderPoint(const Segment &e, const vec3d &base) const
 {
-	const vec3d pos = base + e.origin;
+	const vec3d pos = base + e.origin + e.displayVector;
 
-	glColor3f(1.0f, 1.0f, 0.0f);
+	if (e.type == Segment::Effector)
+		glColor3f(1.0f, 1.0f, 0.0f);
+	else
+		glColor3f(1.0f, 0.0f, 0.0f);
 	glBegin(GL_LINES);
 	{
 		const double size = 0.25;

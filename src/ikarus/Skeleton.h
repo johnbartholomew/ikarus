@@ -97,7 +97,6 @@ public:
 	int getNumEffectors() const;
 	int getNumBones() const;
 
-	// getNumSegments() == getNumBones() + getNumEffectors() + 1 (for the root)
 	int getNumSegments() const;
 
 	Segment &getRoot() const;
@@ -111,7 +110,7 @@ private:
 
 	void renderSegment(int idx, const vec3d &base) const;
 	void renderBone(const Segment &e, const vec3d &base) const;
-	void renderEffector(const Segment &e, const vec3d &base) const;
+	void renderPoint(const Segment &e, const vec3d &base) const;
 };
 
 // A pose represents a configuration that a skeleton can be in
