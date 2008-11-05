@@ -68,6 +68,7 @@ void Label::run(OrbGui &gui, OrbLayout &lyt)
 {
 	vec2f szf(gui.textOut->measureText(gui.font, mText));
 	vec2i sz((int)szf.x, (int)szf.y);
+	sz += vec2i(6, 0);
 	recti bounds = lyt.place(sz);
 
 	if (mEnabled)
@@ -88,7 +89,7 @@ bool Button::run(OrbGui &gui, OrbLayout &lyt)
 
 	vec2f szf(gui.textOut->measureText(gui.font, mText));
 	vec2i sz((int)szf.x, (int)szf.y);
-	sz += vec2i(4, 4);
+	sz += vec2i(10, 4);
 	recti bounds = lyt.place(sz);
 
 	if (mEnabled)
@@ -144,7 +145,7 @@ bool Button::run(OrbGui &gui, OrbLayout &lyt)
 	else
 		glColor3f(0.7f, 0.7f, 0.7f);
 
-	glTranslatef(2.0f, 2.0f, 0.0f);
+	glTranslatef(5.0f, 2.0f, 0.0f);
 	gui.textOut->drawText(gui.font, mText);
 
 	glPopMatrix();
@@ -155,12 +156,10 @@ bool Button::run(OrbGui &gui, OrbLayout &lyt)
 
 bool CheckBox::run(OrbGui &gui, OrbLayout &lyt)
 {
-	bool result = mChecked;
-
 	vec2f szf(gui.textOut->measureText(gui.font, mText));
 	vec2i sz((int)szf.x, (int)szf.y);
 	int chkTop = (int)((szf.y - 10.0f) / 2.0f);
-	sz += vec2i(14, 4);
+	sz += vec2i(18, 4);
 	recti bounds = lyt.place(sz);
 
 	vec3f bgCol;
@@ -189,11 +188,7 @@ bool CheckBox::run(OrbGui &gui, OrbLayout &lyt)
 		{
 			if (gui.input->wasMouseButtonReleased(MouseButton::Left))
 			{
-				if (isHot)
-				{
-					result = !result;
-					mChecked = result;
-				}
+				if (isHot) mChecked = !mChecked;
 				gui.setActive(WidgetID::NullWID);
 			}
 		}
@@ -240,12 +235,53 @@ bool CheckBox::run(OrbGui &gui, OrbLayout &lyt)
 		glEnd();
 	}
 
-	glTranslatef(12.0f, 0.0f, 0.0f);
+	glTranslatef(15.0f, 0.0f, 0.0f);
 	gui.textOut->drawText(gui.font, mText);
 
 	glPopMatrix();
-	return result;
+	return mChecked;
 }
 
 // ===== Slider ==============================================================
+
+double Slider::run(OrbGui &gui, OrbLayout &lyt)
+{
+	recti bounds = lyt.place(vec2i((int)(mMax - mMin), 22));
+
+	int centre = bounds.topLeft.y + (bounds.size.y / 2);
+
+	glDisable(GL_TEXTURE_2D);
+
+	glColor3f(0.7f, 0.7f, 0.7f);
+	glBegin(GL_LINES);
+	glVertex2i(bounds.topLeft.x + 2, centre);
+	glVertex2i(bounds.topLeft.x + bounds.size.x - 2, centre);
+	glEnd();
+
+	double a = (mValue - mMin) / (mMax - mMin);
+	int pos = bounds.topLeft.x + 2 + (int)(a * (bounds.size.x - 4));
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex2i(pos - 2, bounds.topLeft.y + 2);
+	glVertex2i(pos + 2, bounds.topLeft.y + 2);
+	glVertex2i(pos + 2, bounds.topLeft.y + bounds.size.y - 2);
+	glVertex2i(pos - 2, bounds.topLeft.y + bounds.size.y - 2);
+	glEnd();
+
+	if (mEnabled)
+		glColor3f(1.0f, 1.0f, 1.0f);
+	else
+		glColor3f(0.3f, 0.3f, 0.3f);
+
+	glBegin(GL_QUADS);
+	glVertex2i(pos - 2, bounds.topLeft.y + 2);
+	glVertex2i(pos + 2, bounds.topLeft.y + 2);
+	glVertex2i(pos + 2, bounds.topLeft.y + bounds.size.y - 2);
+	glVertex2i(pos - 2, bounds.topLeft.y + bounds.size.y - 2);
+	glEnd();
+
+	return mValue;
+}
+
 // ===== ComboBox ============================================================

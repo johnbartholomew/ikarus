@@ -345,14 +345,19 @@ void render(Skeleton &skel, const Camera &cam)
 void renderGui(OrbGui &gui)
 {
 	static bool showControls = false;
+	static double sliderVal = 50.0;
 	
-	Label("title-lbl", "MONKEY").run(gui, FixedLayout(recti(10, 10)));
-	showControls = CheckBox("show", "Show Controls", showControls).run(gui, FixedLayout(recti(10, 32)));
+	Label("title", "MONKEY").run(gui, FixedLayout(10, 10));
+	showControls = CheckBox("show", "Show Controls", showControls).run(gui, FixedLayout(10, 32));
 
 	if (showControls)
 	{
-		Label("hello-lbl", "Hello, world!").run(gui, FixedLayout(recti(30, 54)));
-		if (Button("hide-btn", "Hide").run(gui, FixedLayout(30, 76)))
+		Label("hello", "Hello, world!").run(gui, FixedLayout(30, 54));
+		sliderVal = Slider("value", 0.0, 100.0, sliderVal).run(gui, FixedLayout(30, 76, 100, 15));
+		std::ostringstream ss;
+		ss << sliderVal;
+		Label("value-lbl", ss.str()).run(gui, FixedLayout(140, 76));
+		if (Button("hide-btn", "Hide").run(gui, FixedLayout(30, 98)))
 			showControls = false;
 	}
 }
