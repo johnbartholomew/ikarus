@@ -77,21 +77,27 @@ private:
 class StretchLayout : public OrbLayout
 {
 public:
-	explicit StretchLayout(OrbLayout &lyt);
+	explicit StretchLayout(OrbLayout &lyt, int padLeft = 0, int padTop = 0, int padRight = 0, int padBottom = 0);
 
 	virtual recti place();
 	virtual recti place(const vec2i &size);
 private:
-	const recti mRect;
+	recti mBounds;
 };
 
+// a ColumnLayout stretches widgets to the full widget
+// of the column and just lays them out in non-overlapping rows
 class ColumnLayout : public OrbLayout
 {
 public:
-	explicit ColumnLayout(OrbLayout &lyt);
+	explicit ColumnLayout(OrbLayout &lyt, int padLeft = 0, int padTop = 0, int padRight = 0, int padBottom = 0, int spacing = 0);
 
 	virtual recti place();
 	virtual recti place(const vec2i &size);
+private:
+	recti mBounds;
+	int mNextTop;
+	int mSpacing;
 };
 
 class SplitLayout : public OrbLayout

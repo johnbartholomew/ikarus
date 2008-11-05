@@ -342,22 +342,24 @@ void render(Skeleton &skel, const Camera &cam)
 	renderOverlay(cam);
 }
 
-void renderGui(OrbGui &gui)
+void renderGui(OrbGui &gui, OrbWindow &wnd)
 {
 	static bool showControls = false;
 	static double sliderVal = 50.0;
 	
-	Label("title", "MONKEY").run(gui, FixedLayout(10, 10));
-	showControls = CheckBox("show", "Show Controls", showControls).run(gui, FixedLayout(10, 32));
+	ColumnLayout lyt(FixedLayout(10, 10, 200, wnd.getSize().y), 10, 10, 10, 10, 3);
+
+	Label("title", "MONKEY").run(gui, lyt);
+	showControls = CheckBox("show", "Show Controls", showControls).run(gui, lyt);
 
 	if (showControls)
 	{
-		Label("hello", "Hello, world!").run(gui, FixedLayout(30, 54));
-		sliderVal = Slider("value", 0.0, 100.0, 10.0, sliderVal, true).run(gui, FixedLayout(30, 76, 100, 0));
+		Label("hello", "Hello, world!").run(gui, lyt);
+		sliderVal = Slider("value", 0.0, 100.0, 10.0, sliderVal, true).run(gui, lyt);
 		std::ostringstream ss;
 		ss << sliderVal;
-		Label("value-lbl", ss.str()).run(gui, FixedLayout(140, 76));
-		if (Button("hide-btn", "Hide").run(gui, FixedLayout(30, 98)))
+		Label("value-lbl", ss.str()).run(gui, lyt);
+		if (Button("hide-btn", "Hide").run(gui, lyt))
 			showControls = false;
 	}
 }
@@ -415,7 +417,7 @@ int main(int argc, char *argv[])
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 
-			renderGui(gui);
+			renderGui(gui, wnd);
 
 			if (wnd.input.wasKeyPressed(KeyCode::Escape))
 				break;

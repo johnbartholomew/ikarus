@@ -117,6 +117,59 @@ void OrbGui::clearActive()
 }
 
 //////////////////////////////////////////////////////////////////////////////
+//   LAYOUTS                                                                //
+//////////////////////////////////////////////////////////////////////////////
+
+// ===== StretchLayout =======================================================
+
+StretchLayout::StretchLayout(OrbLayout &lyt, int padLeft, int padTop, int padRight, int padBottom)
+{
+	mBounds = lyt.place();
+	mBounds.topLeft.x += padLeft;
+	mBounds.topLeft.y += padTop;
+	mBounds.size.x -= (padLeft + padRight);
+	mBounds.size.y -= (padTop + padBottom);
+}
+
+recti StretchLayout::place()
+{
+	return mBounds;
+}
+
+recti StretchLayout::place(const vec2i &size)
+{
+	return mBounds;
+}
+
+// ===== ColumnLayout ========================================================
+
+ColumnLayout::ColumnLayout(OrbLayout &lyt, int padLeft, int padTop, int padRight, int padBottom, int spacing)
+:	mSpacing(spacing)
+{
+	mBounds = lyt.place();
+	mBounds.topLeft.x += padLeft;
+	mBounds.topLeft.y += padTop;
+	mBounds.size.x -= (padLeft + padRight);
+	mBounds.size.y -= (padTop + padBottom);
+	
+	mNextTop = mBounds.topLeft.y;
+}
+
+recti ColumnLayout::place()
+{
+	recti r(mBounds.topLeft.x, mNextTop, mBounds.size.x, mBounds.size.y - mNextTop);
+	mNextTop += r.size.y + mSpacing;
+	return r;
+}
+
+recti ColumnLayout::place(const vec2i &size)
+{
+	recti r(mBounds.topLeft.x, mNextTop, mBounds.size.x, size.y);
+	mNextTop += r.size.y + mSpacing;
+	return r;
+}
+
+//////////////////////////////////////////////////////////////////////////////
 //   WIDGETS                                                                //
 //////////////////////////////////////////////////////////////////////////////
 
