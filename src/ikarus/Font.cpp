@@ -37,7 +37,6 @@ namespace // anonymous namespace
 #pragma pack(1)
 	struct InfoBlock
 	{
-		unsigned int blockSize;
 		unsigned short fontSize;
 		unsigned char flags; // bold, italic, unicode & smooth
 		unsigned char charSet;
@@ -55,27 +54,28 @@ namespace // anonymous namespace
 
 	struct CommonBlock
 	{
-		unsigned int blockSize;
 		unsigned short lineHeight;
 		unsigned short base;
 		unsigned short scaleW;
 		unsigned short scaleH;
 		unsigned short pages;
-		unsigned char flags; // packed & encoded (encoded was added with version 2)
+		unsigned char flags; // packed & encoded (encoded was added with version 2 and removed with version 3)
+		unsigned char alphaChnl;
+		unsigned char redChnl;
+		unsigned char greenChnl;
+		unsigned char blueChnl;
 	};
 
 	struct PagesBlock
 	{
-		unsigned int blockSize;
 		char pageNames[1];
 	};
 
 	struct CharsBlock
 	{
-		unsigned int blockSize;
 		struct CharInfo
 		{
-			unsigned short id;
+			unsigned int id;
 			unsigned short x;
 			unsigned short y;
 			unsigned short width;
@@ -90,11 +90,10 @@ namespace // anonymous namespace
 
 	struct KerningPairsBlock
 	{
-		unsigned int blockSize;
 		struct KerningPair
 		{
-			unsigned short first;
-			unsigned short second;
+			unsigned int first;
+			unsigned int second;
 			signed short amount;
 		} kerningPairs[1];
 	};
@@ -145,7 +144,7 @@ void Font::loadFromFile(const char *fname)
 
 	unsigned char version;
 	ReadRaw(ss, version);
-	if (version != 2)
+	if (version > 3)
 		throw std::runtime_error("Cannot load font file (unsupported file version)");
 
 	while (ss.good())
@@ -158,6 +157,10 @@ void Font::loadFromFile(const char *fname)
 		ReadRaw(ss, blockSize);
 		if (! ss.good())
 			throw std::runtime_error("Cannot load font file (file is truncated; ends after a block type tag)");
+
+		// before version 3, the blockSize included the size field itself
+		if (version < 3)
+			blockSize -= 4;
 
 		switch (blockType)
 		{
@@ -186,8 +189,7 @@ void Font::loadFromFile(const char *fname)
 void Font::loadInfoBlock(std::istream &ss, unsigned int blockSize, int version)
 {
 	InfoBlock block;
-
-	block.blockSize = blockSize;
+	
 	ReadRaw(ss, block.fontSize);
 	ReadRaw(ss, block.flags);
 	ReadRaw(ss, block.charSet);
@@ -225,7 +227,6 @@ void Font::loadCommonBlock(std::istream &ss, unsigned int blockSize, int version
 {
 	CommonBlock block;
 
-	block.blockSize = blockSize;
 	ReadRaw(ss, block.lineHeight);
 	ReadRaw(ss, block.base);
 	ReadRaw(ss, block.scaleW);
@@ -233,13 +234,18 @@ void Font::loadCommonBlock(std::istream &ss, unsigned int blockSize, int version
 	ReadRaw(ss, block.pages);
 	ReadRaw(ss, block.flags);
 
-	if (version == 1)
+	if (version == 1 || version == 3) // encoded was added in version 2 and removed in version 3 (lol?)
 		block.flags &= kBlockPacked;
 	else if (version == 2)
 		block.flags &= kBlockPacked | kBlockEncoded;
 
-	if (blockSize != sizeof(block))
-		throw std::runtime_error("Cannot load font file (file is truncated; overly large common block)");
+	if (version == 3)
+	{
+		ReadRaw(ss, block.alphaChnl);
+		ReadRaw(ss, block.redChnl);
+		ReadRaw(ss, block.greenChnl);
+		ReadRaw(ss, block.blueChnl);
+	}
 
 	mLineHeight = static_cast<float>(block.lineHeight);
 	mBase = static_cast<float>(block.base);
@@ -251,22 +257,25 @@ void Font::loadPagesBlock(std::istream &ss, unsigned int blockSize, int version,
 	// FIXME: support multiple page fonts??
 
 	PagesBlock block;
-	block.blockSize = blockSize;
 
 	unsigned int fnameLength = blockSize - sizeof(block);
 	std::string fname;
 	fname.reserve(fnameLength);
 
-	unsigned int pos = 4;
+	unsigned int pos = 0;
 	while (ss.good() && (pos < blockSize))
 	{
 		char c;
 		ReadRaw(ss, c);
+		pos += 1;
 		if (c == 0)
 			break;
 		else
 			fname += c;
 	}
+
+	if (pos != blockSize)
+		throw std::runtime_error("Cannot load font file (pages block is truncated or has an incorrect blockSize)");
 
 	mTexture->loadFromFile((baseDir + fname).c_str(), false, Texture::FormatAlpha);
 }
@@ -277,10 +286,17 @@ void Font::loadCharsBlock(std::istream &ss, unsigned int blockSize, int version)
 
 	vec2i texSize = mTexture->getSize();
 
-	unsigned int pos = 4;
+	unsigned int pos = 0;
 	while (ss.good() && (pos < blockSize))
 	{
-		ReadRaw(ss, c.id);
+		if (version < 3)
+		{
+			unsigned short ids;
+			ReadRaw(ss, ids);
+			c.id = ids;
+		}
+		else
+			ReadRaw(ss, c.id);
 		ReadRaw(ss, c.x);
 		ReadRaw(ss, c.y);
 		ReadRaw(ss, c.width);
@@ -290,6 +306,11 @@ void Font::loadCharsBlock(std::istream &ss, unsigned int blockSize, int version)
 		ReadRaw(ss, c.xadvance);
 		ReadRaw(ss, c.page);
 		ReadRaw(ss, c.chnl);
+
+		if (version < 3)
+			pos += 18;
+		else
+			pos += 20;
 
 		if (c.id >= 256)
 			continue;
@@ -316,6 +337,9 @@ void Font::loadCharsBlock(std::istream &ss, unsigned int blockSize, int version)
 		);
 	}
 
+	if (pos != blockSize)
+		throw std::runtime_error("Cannot load font file (chars block is truncated or has an incorrect blockSize)");
+
 	// hard-code for space and tab
 	mCharMetrics[' '].draw = false;
 	mCharMetrics['\t'].draw = false;
@@ -326,12 +350,29 @@ void Font::loadKerningBlock(std::istream &ss, unsigned int blockSize, int versio
 {
 	KerningPairsBlock::KerningPair info;
 
-	unsigned int pos = 4;
+	unsigned int pos = 0;
 	while (ss.good() && (pos < blockSize))
 	{
-		ReadRaw(ss, info.first);
-		ReadRaw(ss, info.second);
+		if (version < 3)
+		{
+			unsigned short ids;
+			ReadRaw(ss, ids);
+			info.first = ids;
+			ReadRaw(ss, ids);
+			info.second = ids;
+		}
+		else
+		{
+			ReadRaw(ss, info.first);
+			ReadRaw(ss, info.second);
+		}
+		
 		ReadRaw(ss, info.amount);
+
+		if (version < 3)
+			pos += 6;
+		else
+			pos += 10;
 
 		if (info.first >= 256 || info.second >= 256)
 			continue;
@@ -341,6 +382,9 @@ void Font::loadKerningBlock(std::istream &ss, unsigned int blockSize, int versio
 			static_cast<float>(info.amount)
 		));
 	}
+
+	if (pos != blockSize)
+		throw std::runtime_error("Cannot load font file (kerning block is truncated or has an incorrect blockSize)");
 }
 
 const Texture *Font::getTexture() const
