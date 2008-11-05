@@ -189,9 +189,9 @@ public:
 	bool isKeyDown(int key) const
 	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] & Down); }
 	bool wasKeyPressed(int key) const
-	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT);return (mKeyState[key] == Pressed); }
+	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] == Pressed); }
 	bool wasKeyReleased(int key) const
-	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT);return (mKeyState[key] == Released); }
+	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] == Released); }
 
 	int buttonToKeyCode(int button) const
 	{
