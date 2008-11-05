@@ -6,6 +6,8 @@
 struct WidgetID
 {
 public:
+	static const WidgetID NullWID;
+
 	WidgetID()
 		: name("__null"), data(0), idx(0) { makeHash(); }
 
@@ -13,38 +15,39 @@ public:
 		: name(wid.name), data(wid.data), idx(wid.idx), hash(wid.hash) {}
 
 	// WidgetID has a constructors for each combination of identifying information
-	// however, most of the time you won't construct a WidgetID yourself (that'll be left to the gui widget function)
 
-	explicit WidgetID(const std::string &name)
-		: name(name), data(0), idx(0) { makeHash(); }
-	explicit WidgetID(const char *name)
-		: name(name), data(0), idx(0) { makeHash(); }
+	// these constructors are deliberately not explicit, because I want to be able to use strings, indexes and pointers directly as IDs
 
-	explicit WidgetID(int idx)
+	WidgetID(const std::string &name)
+		: name(name), data(0), idx(0) { makeHash(); }
+	WidgetID(const char *name)
+		: name(name ? name : ""), data(0), idx(0) { makeHash(); }
+
+	WidgetID(int idx)
 		: name("__idxonly"), data(0), idx(idx) { makeHash(); }
 
 	template<typename T>
-	explicit WidgetID(T *data)
+	WidgetID(T *data)
 		: name("__dataonly"), data(static_cast<void*>(data)), idx(0) { makeHash(); }
 
-	explicit WidgetID(const std::string &name, int idx)
+	WidgetID(const std::string &name, int idx)
 		: name(name), data(0), idx(idx) { makeHash(); }
-	explicit WidgetID(const char *name, int idx)
-		: name(name), data(0), idx(idx) { makeHash(); }
+	WidgetID(const char *name, int idx)
+		: name(name ? name : ""), data(0), idx(idx) { makeHash(); }
 
 	template<typename T>
-	explicit WidgetID(const std::string &name, T *data)
+	WidgetID(const std::string &name, T *data)
 		: name(name), data(static_cast<void*>(data)), idx(0) { makeHash(); }
 	template<typename T>
-	explicit WidgetID(const char *name, T *data)
-		: name(name), data(static_cast<void*>(data)), idx(0) { makeHash(); }
+	WidgetID(const char *name, T *data)
+		: name(name ? name : ""), data(static_cast<void*>(data)), idx(0) { makeHash(); }
 
 	template<typename T>
-	explicit WidgetID(const std::string &name, T *data, int idx)
+	WidgetID(const std::string &name, T *data, int idx)
 		: name(name), data(static_cast<void*>(data)), idx(0) { makeHash(); }
 	template<typename T>
-	explicit WidgetID(const char *name, T *data, int idx)
-		: name(name), data(static_cast<void*>(data)), idx(0) { makeHash(); }
+	WidgetID(const char *name, T *data, int idx)
+		: name(name ? name : ""), data(static_cast<void*>(data)), idx(0) { makeHash(); }
 
 	WidgetID &operator=(const WidgetID &wid)
 	{
@@ -52,6 +55,7 @@ public:
 		data = wid.data;
 		idx = wid.idx;
 		hash = wid.hash;
+		return *this;
 	}
 
 	bool operator==(const WidgetID &wid) const
@@ -60,6 +64,7 @@ public:
 		if (idx != wid.idx) return false;
 		if (data != wid.data) return false;
 		if (name != wid.name) return false;
+		return true;
 	}
 
 	bool operator!=(const WidgetID &wid) const
@@ -67,6 +72,9 @@ public:
 
 	unsigned int getHash() const
 	{ return hash; }
+
+	bool isNull() const
+	{ return (*this == NullWID); }
 
 private:
 	void makeHash();
