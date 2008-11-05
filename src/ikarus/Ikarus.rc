@@ -1,0 +1,10 @@
+#include "resources.h"
+
+#include <WinResrc.h>
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+
+// nb: application icon must come first and have lowest resource ID
+ICO_MAIN                ICON                    "orb.ico"
+

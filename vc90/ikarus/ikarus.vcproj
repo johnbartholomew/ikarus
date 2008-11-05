@@ -56,13 +56,14 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				AdditionalIncludeDirectories="$(SolutionDir)..\assets\icon"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glfw_d.lib soil_d.lib glew_d.lib opengl32.lib"
+				AdditionalDependencies="soil_d.lib glew_d.lib opengl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)-debug.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(SolutionDir)..\lib"
@@ -133,13 +134,14 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				AdditionalIncludeDirectories="$(SolutionDir)..\assets\icon"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glfw.lib soil.lib glew.lib opengl32.lib"
+				AdditionalDependencies="soil.lib glew.lib opengl32.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(SolutionDir)..\lib"
 				GenerateDebugInformation="true"
@@ -190,6 +192,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\ikarus\OpenGLContext.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OrbGui.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OrbInput.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OrbWindow.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ikarus\PCH.cpp"
 				>
 				<FileConfiguration
@@ -221,6 +239,14 @@
 				RelativePath="..\..\src\ikarus\VertexBuffer.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Win32Error.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Window.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -240,7 +266,43 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\ikarus\IkGui.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\murmurhash.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OpenGLContext.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OrbGui.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OrbInput.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OrbWidgetID.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\OrbWindow.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ikarus\refvector.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\resources.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\scopedenum.h"
 				>
 			</File>
 			<File
@@ -263,12 +325,28 @@
 				RelativePath="..\..\src\ikarus\vmath.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Win32Error.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Window.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\WndDC.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath="..\..\src\ikarus\Ikarus.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

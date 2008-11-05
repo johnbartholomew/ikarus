@@ -1,4 +1,5 @@
 #include "Global.h"
+#include "OrbWindow.h"
 #include "Skeleton.h"
 #include "Font.h"
 
@@ -43,9 +44,11 @@ public:
 
 	virtual void update()
 	{
+#if 0
 		int wheel = glfwGetMouseWheel();
 		// nb: if you change this change the CameraOrtho initializer
 		scale = (GridWidth/2.0) * std::pow(CameraDistWheelScale, -wheel);
+#endif
 	}
 
 	virtual void render() const {}
@@ -108,6 +111,7 @@ public:
 
 	virtual void update()
 	{
+#if 0
 		int wheel = glfwGetMouseWheel();
 		cameraDist = CameraDistance * std::pow(CameraDistWheelScale, -wheel);
 
@@ -131,6 +135,7 @@ public:
 				dragging = false;
 			}
 		}
+#endif
 	}
 
 	void startDrag(const vec2i &pos)
@@ -341,37 +346,44 @@ int main(int argc, char *argv[])
 #endif
 {
 	int retval = 0;
-	glfwInit();
 
 	try
 	{
-		if (!glfwOpenWindow(800, 600, 8, 8, 8, 8, 24, 0, GLFW_WINDOW))
-			throw std::runtime_error("Could not create OpenGL window");
+		OrbWindow wnd;
+		wnd.open(L"Ikarus", 1024, 768);
 
-		glfwSetWindowTitle("Ikarus");
-
+		// initialize GLEW and set up OpenGL
 		glewInit();
 		initGL();
 
+		// load the skeleton
 		Skeleton skel;
 		skel.loadFromFile("human.skl");
 
+		// load the default font
 		Font font;
 		font.loadFromFile("arial-rounded-18.fnt");
 		gFont = &font;
 		TextRenderer textRenderer;
 		gTextRenderer = &textRenderer;
 
+		// set up the cameras
 		CameraAzimuthElevation cameraPerspective(800, 600);
 		CameraOrtho cameraX(800, 600, 0);
 		CameraOrtho cameraY(800, 600, 1);
 		CameraOrtho cameraZ(800, 600, 2);
 
+		// pick the default camera
 		Camera *cam = &cameraPerspective;
 
-		bool dragging = false;
-		while (true)
+		while (Window::ProcessWaitingMessages(&retval))
 		{
+			glClear(GL_COLOR_BUFFER_BIT);
+			wnd.flipGL();
+		}
+
+		{
+#if 0
 			cam->update();
 			render(skel, *cam);
 
@@ -399,6 +411,7 @@ int main(int argc, char *argv[])
 				delta.y += 1.0;
 			if (glfwGetKey('Z'))
 				delta.y -= 1.0;
+#endif
 
 #if 0
 			if (delta.x != 0.0 || delta.y != 0.0 || delta.z != 0.0)
@@ -414,8 +427,10 @@ int main(int argc, char *argv[])
 			if (skel.targetPos.z < -GridWidth/2.0) skel.targetPos.z = -GridWidth/2.0;
 #endif
 			
+#if 0
 			if (glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED))
 				break;
+#endif
 		}
 	}
 	catch (std::exception &e)
@@ -429,6 +444,5 @@ int main(int argc, char *argv[])
 		retval = 1;
 	}
 
-	glfwTerminate();
 	return retval;
 }
