@@ -14,6 +14,8 @@ OrbWindow::~OrbWindow()
 
 void OrbWindow::open(const wchar_t *title, int width, int height)
 {
+	mSize = vec2i(width, height);
+
 	HINSTANCE inst = GetModuleHandle(NULL);
 	MainWindow::open(kOrbWindowClass, title, LoadIcon(inst, MAKEINTRESOURCE(ICO_MAIN)), width, height);
 
@@ -66,10 +68,17 @@ int MessageToMouseButton(UINT msg, WPARAM wparam)
 {
 	switch (msg)
 	{
-	case WM_LBUTTONDOWN: return MouseButton::Left;
-	case WM_RBUTTONDOWN: return MouseButton::Right;
-	case WM_MBUTTONDOWN: return MouseButton::Middle;
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+		return MouseButton::Left;
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+		return MouseButton::Right;
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+		return MouseButton::Middle;
 	case WM_XBUTTONDOWN:
+	case WM_XBUTTONUP:
 		if (HIWORD(wparam) == XBUTTON1)
 			return MouseButton::X1;
 		else if (HIWORD(wparam) == XBUTTON2)
