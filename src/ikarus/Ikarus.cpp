@@ -1,7 +1,9 @@
 #include "Global.h"
 #include "OrbWindow.h"
-#include "Skeleton.h"
+#include "OrbGui.h"
+
 #include "Font.h"
+#include "Skeleton.h"
 
 const double CameraDistance = 30.0;
 const double Aspect = 4.0 / 3.0;
@@ -298,6 +300,7 @@ void initGL()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 	gridList = glGenLists(1);
 	glNewList(gridList, GL_COMPILE);
@@ -339,6 +342,18 @@ void render(Skeleton &skel, const Camera &cam)
 	renderOverlay(cam);
 }
 
+void renderGui(OrbGui &gui)
+{
+	static bool showHello = false;
+	
+	Label("button-lbl", "Button:").run(gui, vec2i(10, 10));
+	if (Button("go-btn", "Go!").run(gui, vec2i(10, 32)))
+		showHello = !showHello;
+
+	if (showHello)
+		Label("hello-lbl", "Hello, world!").run(gui, vec2i(10, 54));
+}
+
 #ifdef _WIN32
 int APIENTRY wWinMain(HINSTANCE hPrevInstance, HINSTANCE hInstance, LPWSTR cmdLine, int nShowCmd)
 #else
@@ -366,6 +381,8 @@ int main(int argc, char *argv[])
 		gFont = &font;
 		TextRenderer textRenderer;
 		gTextRenderer = &textRenderer;
+		
+		OrbGui gui(&wnd.input, gFont, gTextRenderer);
 
 		// set up the cameras
 		CameraAzimuthElevation cameraPerspective(800, 600);
@@ -376,10 +393,26 @@ int main(int argc, char *argv[])
 		// pick the default camera
 		Camera *cam = &cameraPerspective;
 
+		wnd.input.beginFrame();
 		while (Window::ProcessWaitingMessages(&retval))
 		{
 			glClear(GL_COLOR_BUFFER_BIT);
+			
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			vec2i sz = wnd.getSize();
+			glOrtho(0.0, (double)sz.x, (double)sz.y, 0.0, -1.0, 1.0);
+
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+
+			renderGui(gui);
+
+			if (wnd.input.wasKeyPressed(KeyCode::Escape))
+				break;
+
 			wnd.flipGL();
+			wnd.input.beginFrame();
 		}
 
 		{
