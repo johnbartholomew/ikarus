@@ -21,9 +21,10 @@ public:
 	const WidgetID &getHot() const
 	{ return mHot; }
 	
-	void releaseHot(const WidgetID &wid);
 	void requestHot(const WidgetID &wid);
+	void releaseHot(const WidgetID &wid);
 	void setActive(const WidgetID &wid);
+	void clearActive();
 
 	const Font *font;
 	TextRenderer *textOut;
@@ -64,10 +65,10 @@ public:
 
 	virtual recti place(const vec2i &size)
 	{
-		if (mRect.size != vec2i(0,0))
-			return mRect;
-		else
-			return recti(mRect.topLeft, size);
+		recti r = mRect;
+		if (r.size.x <= 0) r.size.x = size.x;
+		if (r.size.y <= 0) r.size.y = size.y;
+		return r;
 	}
 private:
 	const recti mRect;
@@ -150,14 +151,25 @@ private:
 class Slider : public OrbWidget
 {
 public:
-	Slider(const WidgetID &id, double minValue, double maxValue, double value, bool enabled = true)
-		: OrbWidget(id), mMin(minValue), mMax(maxValue), mValue(value), mEnabled(enabled) {}
+	Slider(const WidgetID &id,
+		double minValue, double maxValue, double stepValue,
+		double value,
+		bool continuousUpdate = false, bool enabled = true
+	)
+	:	OrbWidget(id),
+		mMin(minValue), mMax(maxValue), mStep(stepValue),
+		mValue(value),
+		mContinuousUpdate(continuousUpdate), mEnabled(enabled)
+	{}
 
 	double run(OrbGui &gui, OrbLayout &lyt);
 private:
+	void calcGrabPos(double v, const recti &bounds, vec2i &grabPos, recti &grabBox) const;
 	double mMin;
 	double mMax;
+	double mStep;
 	double mValue;
+	double mContinuousUpdate;
 	bool mEnabled;
 };
 

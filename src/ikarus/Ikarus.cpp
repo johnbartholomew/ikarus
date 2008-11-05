@@ -353,7 +353,7 @@ void renderGui(OrbGui &gui)
 	if (showControls)
 	{
 		Label("hello", "Hello, world!").run(gui, FixedLayout(30, 54));
-		sliderVal = Slider("value", 0.0, 100.0, sliderVal).run(gui, FixedLayout(30, 76, 100, 15));
+		sliderVal = Slider("value", 0.0, 100.0, 10.0, sliderVal, true).run(gui, FixedLayout(30, 76, 100, 0));
 		std::ostringstream ss;
 		ss << sliderVal;
 		Label("value-lbl", ss.str()).run(gui, FixedLayout(140, 76));

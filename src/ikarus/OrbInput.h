@@ -179,11 +179,11 @@ public:
 	int getMouseWheelDelta() const
 	{ return mWheelDelta / WHEEL_DELTA; }
 
-	bool isMouseButtonDown(int button) const
+	bool isMouseDown(int button) const
 	{ return isKeyDown(buttonToKeyCode(button)); }
-	bool wasMouseButtonPressed(int button) const
+	bool wasMousePressed(int button) const
 	{ return wasKeyPressed(buttonToKeyCode(button)); }
-	bool wasMouseButtonReleased(int button) const
+	bool wasMouseReleased(int button) const
 	{ return wasKeyReleased(buttonToKeyCode(button)); }
 
 	bool isKeyDown(int key) const
