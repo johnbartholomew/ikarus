@@ -95,14 +95,16 @@ namespace detail {
 	}
 
 #define MOP_COMP_TEMPLATE(CLASS, COUNT) \
-	bool operator == (const CLASS & rhs) \
+	bool operator == (const CLASS & rhs) const \
 	{ \
-		bool result = true; \
 		for (int i = 0; i < (COUNT); ++i) \
-			result = result && (*this)[i] == rhs[i]; \
-		return result; \
+		{ \
+			if ((*this)[i] != rhs[i]) \
+				return false; \
+		} \
+		return true; \
 	} \
-	bool operator != (const CLASS & rhs) \
+	bool operator != (const CLASS & rhs) const \
 	{ return !((*this) == rhs); }
 
 #define MOP_G_UMINUS_TEMPLATE(CLASS, COUNT) \
