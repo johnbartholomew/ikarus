@@ -5,12 +5,12 @@
 
 // ===== Helper Functions ====================================================
 
-bool inRect(const vec2i &v, const vec2i &topLeft, const vec2i &sz)
+bool inRect(const vec2i &v, const recti &bounds)
 {
-	vec2i v2(v - topLeft);
+	vec2i v2(v - bounds.topLeft);
 	return
 		(v2.x >= 0) && (v2.y >= 0) &&
-		(v2.x < sz.x) && (v2.y < sz.y);
+		(v2.x < bounds.size.x) && (v2.y < bounds.size.y);
 }
 
 // ===== WidgetID ============================================================
@@ -64,31 +64,32 @@ void OrbGui::setActive(const WidgetID &wid)
 
 // ===== Label ===============================================================
 
-void Label::run(OrbGui &gui, const vec2i &pos)
+void Label::run(OrbGui &gui, OrbLayout &lyt)
 {
+	vec2f szf(gui.textOut->measureText(gui.font, mText));
+	vec2i sz((int)szf.x, (int)szf.y);
+	recti bounds = lyt.place(sz);
+
 	glPushMatrix();
-	glTranslatef((float)pos.x, (float)pos.y, 0.0f);
+	glTranslatef((float)bounds.topLeft.x, (float)bounds.topLeft.y, 0.0f);
 	gui.textOut->drawText(gui.font, mText);
 	glPopMatrix();
 }
 
 // ===== Button ==============================================================
 
-bool Button::run(OrbGui &gui, const vec2i &pos)
+bool Button::run(OrbGui &gui, OrbLayout &lyt)
 {
 	bool result = false;
 
 	vec2f szf(gui.textOut->measureText(gui.font, mText));
 	vec2i sz((int)szf.x, (int)szf.y);
-	
 	sz += vec2i(4, 4);
-
-	glPushMatrix();
-	glTranslatef((float)pos.x, (float)pos.y, 0.0f);
+	recti bounds = lyt.place(sz);
 
 	if (mEnabled)
 	{
-		if (inRect(gui.input->getMousePos(), pos, sz))
+		if (inRect(gui.input->getMousePos(), bounds))
 			gui.requestHot(wid);
 		else
 			gui.releaseHot(wid);
@@ -122,6 +123,9 @@ bool Button::run(OrbGui &gui, const vec2i &pos)
 	}
 	else
 		glColor3f(0.3f, 0.3f, 0.3f);
+	
+	glPushMatrix();
+	glTranslatef((float)bounds.topLeft.x, (float)bounds.topLeft.y, 0.0f);
 
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_QUADS);
@@ -131,11 +135,11 @@ bool Button::run(OrbGui &gui, const vec2i &pos)
 	glVertex2i(0, sz.y);
 	glEnd();
 
-	glEnable(GL_TEXTURE_2D);
 	if (mEnabled)
 		glColor3f(1.0f, 1.0f, 1.0f);
 	else
 		glColor3f(0.7f, 0.7f, 0.7f);
+
 	glTranslatef(2.0f, 2.0f, 0.0f);
 	gui.textOut->drawText(gui.font, mText);
 
@@ -145,29 +149,98 @@ bool Button::run(OrbGui &gui, const vec2i &pos)
 
 // ===== CheckBox ============================================================
 
-bool CheckBox::run(OrbGui &gui, const vec2i &pos)
+bool CheckBox::run(OrbGui &gui, OrbLayout &lyt)
 {
-	glPushMatrix();
-	glTranslatef((float)pos.x, (float)pos.y, 0.0f);
+	bool result = mChecked;
 
-	glBegin(GL_QUADS);
-	glVertex3f(0.0f, 3.0f, 0.0f);
-	glVertex3f(6.0f, 3.0f, 0.0f);
-	glVertex3f(6.0f, 9.0f, 0.0f);
-	glVertex3f(0.0f, 9.0f, 0.0f);
+	vec2f szf(gui.textOut->measureText(gui.font, mText));
+	vec2i sz((int)szf.x, (int)szf.y);
+	int chkTop = (int)((szf.y - 10.0f) / 2.0f);
+	sz += vec2i(14, 4);
+	recti bounds = lyt.place(sz);
+
+	vec3f bgCol;
+
+	if (mEnabled)
+	{
+		if (inRect(gui.input->getMousePos(), bounds))
+			gui.requestHot(wid);
+		else
+			gui.releaseHot(wid);
+
+		bool isHot = (gui.getHot() == wid);
+		bool isActive = (gui.getActive() == wid);
+
+		if (isHot)
+		{
+			if (isActive)
+				bgCol = vec3f(0.3f, 0.7f, 0.3f);
+			else
+				bgCol = vec3f(0.3f, 0.3f, 0.7f);
+		}
+		else
+			bgCol = vec3f(0.3f, 0.3f, 0.3f);
+
+		if (isActive)
+		{
+			if (gui.input->wasMouseButtonReleased(MouseButton::Left))
+			{
+				if (isHot)
+				{
+					result = !result;
+					mChecked = result;
+				}
+				gui.setActive(WidgetID::NullWID);
+			}
+		}
+		else
+		{
+			if (gui.input->wasMouseButtonPressed(MouseButton::Left) && isHot)
+				gui.setActive(wid);
+		}
+	}
+	else
+		bgCol = vec3f(0.3f, 0.3f, 0.3f);
+
+	glPushMatrix();
+	glTranslatef((float)bounds.topLeft.x, (float)bounds.topLeft.y, 0.0f);
+
+	glDisable(GL_TEXTURE_2D);
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex2i( 0, chkTop);
+	glVertex2i(10, chkTop);
+	glVertex2i(10, chkTop+10);
+	glVertex2i( 0, chkTop+10);
 	glEnd();
+
+	glColor3fv(bgCol);
+	glBegin(GL_QUADS);
+	glVertex2i( 0, chkTop);
+	glVertex2i(10, chkTop);
+	glVertex2i(10, chkTop+10);
+	glVertex2i( 0, chkTop+10);
+	glEnd();
+
+	if (mEnabled)
+		glColor3f(1.0f, 1.0f, 1.0f);
+	else
+		glColor3f(0.7f, 0.7f, 0.7f);
+
 	if (mChecked)
 	{
 		glBegin(GL_LINES);
-		glVertex3f(0.0f, 3.0f, 0.0f); glVertex3f(6.0f, 9.0f, 0.0f);
-		glVertex3f(6.0f, 3.0f, 0.0f); glVertex3f(0.0f, 9.0f, 0.0f);
+		glVertex2i( 0, chkTop); glVertex2i(10, chkTop+10);
+		glVertex2i(10, chkTop); glVertex2i( 0, chkTop+10);
 		glEnd();
 	}
-	glTranslatef(8.0f, 0.0f, 0.0f);
+
+	glTranslatef(12.0f, 0.0f, 0.0f);
 	gui.textOut->drawText(gui.font, mText);
 
 	glPopMatrix();
-	return false;
+	return result;
 }
 
 // ===== Slider ==============================================================

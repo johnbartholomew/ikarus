@@ -344,14 +344,17 @@ void render(Skeleton &skel, const Camera &cam)
 
 void renderGui(OrbGui &gui)
 {
-	static bool showHello = false;
+	static bool showControls = false;
 	
-	Label("button-lbl", "Button:").run(gui, vec2i(10, 10));
-	if (Button("go-btn", "Go!").run(gui, vec2i(10, 32)))
-		showHello = !showHello;
+	Label("title-lbl", "MONKEY").run(gui, FixedLayout(recti(10, 10)));
+	showControls = CheckBox("show", "Show Controls", showControls).run(gui, FixedLayout(recti(10, 32)));
 
-	if (showHello)
-		Label("hello-lbl", "Hello, world!").run(gui, vec2i(10, 54));
+	if (showControls)
+	{
+		Label("hello-lbl", "Hello, world!").run(gui, FixedLayout(recti(30, 54)));
+		if (Button("hide-btn", "Hide").run(gui, FixedLayout(30, 76)))
+			showControls = false;
+	}
 }
 
 #ifdef _WIN32

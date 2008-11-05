@@ -33,6 +33,75 @@ private:
 	WidgetID mActive;
 };
 
+class OrbLayout
+{
+public:
+	// place() is used to place layouts and other things for which there is no preferred size
+	virtual recti place() = 0;
+	// place(<size>) is used to place things which have a preferred size
+	// if a coordinate of the size is zero then it is taken to mean the widget can stretch arbitrarily in that direction
+	virtual recti place(const vec2i &size) = 0;
+};
+
+class FixedLayout : public OrbLayout
+{
+public:
+	explicit FixedLayout(int x, int y)
+		: mRect(x, y, 0, 0) {}
+	explicit FixedLayout(const vec2i &topLeft)
+		: mRect(topLeft, vec2i(0,0)) {}
+	explicit FixedLayout(int x, int y, int w, int h)
+		: mRect(x, y, w, h) {}
+	explicit FixedLayout(const vec2i &topLeft, const vec2i &size)
+		: mRect(topLeft, size) {}
+	explicit FixedLayout(const recti &rect)
+		: mRect(rect) {}
+
+	// a FixedLayout ignores the box being placed and returns a constant
+
+	virtual recti place()
+	{ return mRect; }
+
+	virtual recti place(const vec2i &size)
+	{
+		if (mRect.size != vec2i(0,0))
+			return mRect;
+		else
+			return recti(mRect.topLeft, size);
+	}
+private:
+	const recti mRect;
+};
+
+class StretchLayout : public OrbLayout
+{
+public:
+	explicit StretchLayout(OrbLayout &lyt);
+
+	virtual recti place();
+	virtual recti place(const vec2i &size);
+private:
+	const recti mRect;
+};
+
+class ColumnLayout : public OrbLayout
+{
+public:
+	explicit ColumnLayout(OrbLayout &lyt);
+
+	virtual recti place();
+	virtual recti place(const vec2i &size);
+};
+
+class SplitLayout : public OrbLayout
+{
+public:
+	explicit SplitLayout(OrbLayout &lyt);
+
+	virtual recti place();
+	virtual recti place(const vec2i &size);
+};
+
 class OrbWidget
 {
 public:
@@ -47,7 +116,7 @@ public:
 	Label(const WidgetID &id, const std::string &text, bool enabled = true)
 		: OrbWidget(id), mText(text), mEnabled(enabled) {}
 
-	void run(OrbGui &gui, const vec2i &pos);
+	void run(OrbGui &gui, OrbLayout &lyt);
 private:
 	std::string mText;
 	bool mEnabled;
@@ -59,7 +128,7 @@ public:
 	Button(const WidgetID &id, const std::string &text, bool enabled = true)
 		: OrbWidget(id), mText(text), mEnabled(enabled) {}
 
-	bool run(OrbGui &gui, const vec2i &pos);
+	bool run(OrbGui &gui, OrbLayout &lyt);
 private:
 	std::string mText;
 	bool mEnabled;
@@ -68,10 +137,10 @@ private:
 class CheckBox : public OrbWidget
 {
 public:
-	CheckBox(const WidgetID &id, const std::string &text, bool checked, bool enabled)
+	CheckBox(const WidgetID &id, const std::string &text, bool checked, bool enabled = true)
 		: OrbWidget(id), mText(text), mChecked(checked), mEnabled(enabled) {}
 
-	bool run(OrbGui &gui, const vec2i &pos);
+	bool run(OrbGui &gui, OrbLayout &lyt);
 private:
 	std::string mText;
 	bool mChecked;
@@ -81,10 +150,10 @@ private:
 class Slider : public OrbWidget
 {
 public:
-	Slider(const WidgetID &id, double minValue, double maxValue, double value, bool enabled)
+	Slider(const WidgetID &id, double minValue, double maxValue, double value, bool enabled = true)
 		: OrbWidget(id), mMin(minValue), mMax(maxValue), mValue(value), mEnabled(enabled) {}
 
-	double run(OrbGui &gui, const vec2i &pos);
+	double run(OrbGui &gui, OrbLayout &lyt);
 private:
 	double mMin;
 	double mMax;
@@ -101,7 +170,7 @@ public:
 	void add(const std::string &item);
 	void add(const WidgetID &itemID, const std::string &item);
 
-	WidgetID run(OrbGui &gui, const vec2i &pos);
+	WidgetID run(OrbGui &gui, OrbLayout &lyt);
 private:
 	struct Entry
 	{
