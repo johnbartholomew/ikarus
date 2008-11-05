@@ -343,7 +343,7 @@ void Font::loadKerningBlock(std::istream &ss, unsigned int blockSize, int versio
 	}
 }
 
-Texture *Font::getTexture()
+const Texture *Font::getTexture() const
 {
 	return mTexture.get();
 }
@@ -359,7 +359,7 @@ TextRenderer::~TextRenderer()
 {
 }
 
-void TextRenderer::drawText(Font *font, const std::string &text, bool use_kerning)
+void TextRenderer::drawText(const Font *font, const std::string &text, bool use_kerning)
 {
 	if (text.empty())
 		return;
@@ -375,7 +375,7 @@ void TextRenderer::drawText(Font *font, const std::string &text, bool use_kernin
 	mVerts->draw(GL_QUADS, mNumVerts, 0);
 }
 
-vec2f TextRenderer::measureText(Font *font, const std::string &text, bool use_kerning)
+vec2f TextRenderer::measureText(const Font *font, const std::string &text, bool use_kerning)
 {
 	if (text.empty())
 		return vec2f(0.0, 0.0);
@@ -383,7 +383,7 @@ vec2f TextRenderer::measureText(Font *font, const std::string &text, bool use_ke
 	return vec2f(mWidth, mHeight);
 }
 
-int TextRenderer::getStringIndexAt(float test_x, Font *font, const std::string &text, bool use_kerning)
+int TextRenderer::getStringIndexAt(float test_x, const Font *font, const std::string &text, bool use_kerning)
 {
 	float x = 0.0f, next_x;
 
@@ -427,7 +427,7 @@ int TextRenderer::getStringIndexAt(float test_x, Font *font, const std::string &
 	return -1;
 }
 
-void TextRenderer::init(Font *font, const std::string &text, bool use_kerning)
+void TextRenderer::init(const Font *font, const std::string &text, bool use_kerning)
 {
 	if ((font != mFont) || (text != mText) || (use_kerning != mUseKerning))
 	{

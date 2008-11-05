@@ -30,7 +30,7 @@ public:
 	void loadFromFile(const char *fname);
 
 	/// @return The Texture object that holds the font's bitmap/glyph data, or null if the font hasn't been loaded yet.
-	Texture *getTexture();
+	const Texture *getTexture() const;
 
 	/// @return The height of a line of text in this font, or an undefined value if the font hasn't been loaded yet.
 	float getLineHeight() const
@@ -91,15 +91,15 @@ public:
 	TextRenderer();
 	~TextRenderer();
 
-	void drawText(Font *font, const std::string &text, bool use_kerning = true);
-	vec2f measureText(Font *font, const std::string &text, bool use_kerning = true);
-	int getStringIndexAt(float x, Font *font, const std::string &text, bool use_kerning = true);
+	void drawText(const Font *font, const std::string &text, bool use_kerning = true);
+	vec2f measureText(const Font *font, const std::string &text, bool use_kerning = true);
+	int getStringIndexAt(float x, const Font *font, const std::string &text, bool use_kerning = true);
 
 private:
-	void init(Font *font, const std::string &text, bool use_kerning);
+	void init(const Font *font, const std::string &text, bool use_kerning);
 
 	std::string mText;
-	Font *mFont;
+	const Font *mFont;
 	bool mUseKerning;
 	float mWidth;
 	float mHeight;

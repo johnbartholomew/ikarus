@@ -24,7 +24,7 @@ public:
 	Texture();
 	~Texture();
 
-	void bind()
+	void bind() const
 	{ glBindTexture(GL_TEXTURE_2D, mID); }
 
 	static void Unbind()
