@@ -380,7 +380,8 @@ int main(int argc, char *argv[])
 
 		// load the default font
 		Font font;
-		font.loadFromFile("arial-rounded-18.fnt");
+		//font.loadFromFile("arial-rounded-18.fnt");
+		font.loadFromFile("ms-sans-serif-13.fnt");
 		gFont = &font;
 		TextRenderer textRenderer;
 		gTextRenderer = &textRenderer;
