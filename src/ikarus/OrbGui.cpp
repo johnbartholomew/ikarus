@@ -70,6 +70,10 @@ void Label::run(OrbGui &gui, OrbLayout &lyt)
 	vec2i sz((int)szf.x, (int)szf.y);
 	recti bounds = lyt.place(sz);
 
+	if (mEnabled)
+		glColor3f(1.0f, 1.0f, 1.0f);
+	else
+		glColor3f(0.7f, 0.7f, 0.7f);
 	glPushMatrix();
 	glTranslatef((float)bounds.topLeft.x, (float)bounds.topLeft.y, 0.0f);
 	gui.textOut->drawText(gui.font, mText);
