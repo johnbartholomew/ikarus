@@ -4,9 +4,9 @@
 void Skeleton::loadFromFile(const std::string &fname)
 {
 	// reset the existing skeleton
-	segments.clear();
-	numBones = 0;
-	numEffectors = 0;
+	joints.clear();
+	bones.clear();
+	rootPos = vec3d(0.0, 0.0, 0.0);
 
 	std::ifstream fs(fname.c_str(), std::ios::in);
 	std::string ln;
@@ -26,21 +26,83 @@ void Skeleton::loadFromFile(const std::string &fname)
 		{
 			int n;
 			ss >> n;
-			segments.reserve(n);
+			if (n == 0)
+				break;
+			bones.reserve(n - 1);
 		}
 		else if (cmd == "bone")
 		{
-			Segment b;
-			b.type = Segment::Bone;
-			ss >> b.name >> b.worldOrigin.x >> b.worldOrigin.y >> b.worldOrigin.z >> b.displayVector.x >> b.displayVector.y >> b.displayVector.z >> b.parent >> b.childrenBegin >> b.childrenEnd;
-			if (b.childrenEnd < b.childrenBegin)
-				throw std::runtime_error("Invalid bone command in skeleton file.");
-			segments.push_back(b);
+			vec3d worldPos;
+			int parentId, childrenBegin, childrenEnd;
 
-			++numBones;
+			std::auto_ptr<Bone> bptr(new Bone);
+			Bone &b = *bptr;
 
-			if (b.childrenBegin >= b.childrenEnd)
-				++numEffectors;
+			ss
+				>> b.name
+				>> worldPos.x >> worldPos.y >> worldPos.z
+				>> b.effectorPos.x >> b.effectorPos.y >> b.effectorPos.z
+				>> parentId >> childrenBegin >> childrenEnd;
+
+			int numChildren = (childrenEnd - childrenBegin);
+
+			if (parentId < 0)
+			{
+				// special case for the root bone
+				assert(numChildren <= 2);
+				joints.push_back(new Joint);
+			}
+			else
+			{
+				bones.push_back(bptr.release());
+
+				Joint *j;
+				if (parentId == 0)
+				{
+					j = &joints[0];
+					if (j->a == 0)
+						j->a = &b;
+					else
+					{
+						assert(j->b == 0);
+						j->b = &b;
+					}
+				}
+				else
+				{
+					joints.push_back(j = new Joint);
+					j->a = &b;
+				}
+
+				b.joints.push_back(Bone::Connection(j, vec3d(0.0, 0.0, 0.0)));
+
+				if (parentId > 0)
+				{
+					Bone &bp = bones[parentId - 1];
+					
+					assert(j->a != 0);
+					assert(j->b == 0);
+					j->b = &bp;
+
+					bp.joints.push_back(Bone::Connection(j, worldPos));
+				}
+				else
+					rootPos = worldPos;
+			}
+
+
+			// add a joint to connect to each child
+			if (parentId >= 0)
+			{
+				for (int i = childrenBegin; i < childrenEnd; ++i)
+					joints.push_back(new Joint);
+			}
+			else
+			{
+				// the root only ever creates one joint
+				assert(childrenEnd - childrenBegin <= 2);
+				joints.push_back(new Joint);
+			}
 		}
 		else if (cmd == "")
 		{
@@ -51,64 +113,35 @@ void Skeleton::loadFromFile(const std::string &fname)
 	}
 	fs.close();
 
-	segments[0].type = Segment::Root;
+	// fix up joint positions to all be in the local bone space
+	fixJointPositions(*joints[0].a, rootPos);
+	fixJointPositions(*joints[0].b, rootPos);
+}
 
-	// add an extra segment for each end-effector
-	segments.reserve(segments.size() + numEffectors);
-	for (int i = 0; i < numBones; ++i)
+void Skeleton::fixJointPositions(Bone &b, const vec3d &worldPos)
+{
+	for (int i = 1; i < (int)b.joints.size(); ++i)
 	{
-		Segment &b = segments[i];
-		if (b.childrenBegin >= b.childrenEnd)
-		{
-			b.childrenBegin = segments.size();
-			b.childrenEnd = segments.size() + 1;
-			
-			Segment effector;
-			effector.name = b.name + "-target";
-			effector.worldOrigin = b.worldOrigin + b.displayVector;
-			effector.displayVector = vec3d(0.0, 0.0, 0.0);
-			effector.type = Segment::Effector;
-			effector.parent = i;
-			effector.childrenBegin = segments.size();
-			effector.childrenEnd = segments.size();
-			segments.push_back(effector);
-		}
-	}
-
-	// calculate the relative origins of each bone
-	segments[0].origin = segments[0].worldOrigin;
-	for (int i = 1; i < (int)segments.size(); ++i)
-	{
-		Segment &b = segments[i];
-		Segment &p = segments[b.parent];
-		b.origin = b.worldOrigin - p.worldOrigin;
+		Bone::Connection &c = b.joints[i];
+		fixJointPositions(*c.joint->a, c.pos);
+		c.pos -= worldPos;
 	}
 }
 
 void Skeleton::render() const
 {
-	glColor3f(1.0f, 1.0f, 1.0f);
-	renderSegment(0, vec3d(0.0, 0.0, 0.0));
+	renderPoint(vec3f(1.0f, 0.0f, 0.0f), rootPos);
+
+	renderBone(*joints[0].a, rootPos);
+	renderBone(*joints[0].b, rootPos);
 }
 
-void Skeleton::renderSegment(int idx, const vec3d &base) const
+void Skeleton::renderBone(const Bone &b, const vec3d &base) const
 {
-	const Segment &b = segments[idx];
-	if (b.type == Segment::Effector || b.type == Segment::Root)
-		renderPoint(b, base);
-	else
-		renderBone(b, base);
-	
-	for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
-		renderSegment(i, base + b.origin);
-}
+	const vec3d head = base;
+	const vec3d end = head + b.effectorPos;
 
-void Skeleton::renderBone(const Segment &b, const vec3d &base) const
-{
-	const vec3d head = base + b.origin;
-	const vec3d end = head + b.displayVector;
-
-	const double len = length(b.displayVector);
+	const double len = length(b.effectorPos);
 	const double offset = 0.1 * len;
 	const double invSqrt2 = 0.70710678118654746;
 	
@@ -116,7 +149,7 @@ void Skeleton::renderBone(const Segment &b, const vec3d &base) const
 	const vec3d unitY(0.0, 1.0, 0.0);
 	const vec3d unitZ(0.0, 0.0, 1.0);
 
-	const vec3d dir(normalize(b.displayVector));
+	const vec3d dir(normalize(b.effectorPos));
 
 	glColor3f(1.0f, 1.0f, 1.0f);
 	glBegin(GL_LINES);
@@ -154,16 +187,22 @@ void Skeleton::renderBone(const Segment &b, const vec3d &base) const
 		glVertex3dv(v4); glVertex3dv(v5);
 	}
 	glEnd();
+
+	if (b.joints.size() == 1)
+		renderPoint(vec3f(1.0f, 1.0f, 0.0f), end);
+	else
+	{
+		for (int i = 1; i < (int)b.joints.size(); ++i)
+		{
+			const Bone::Connection &c = b.joints[i];
+			renderBone(*c.joint->a, c.pos + base);
+		}
+	}
 }
 
-void Skeleton::renderPoint(const Segment &e, const vec3d &base) const
+void Skeleton::renderPoint(const vec3f &col, const vec3d &pos) const
 {
-	const vec3d pos = base + e.origin + e.displayVector;
-
-	if (e.type == Segment::Effector)
-		glColor3f(1.0f, 1.0f, 0.0f);
-	else
-		glColor3f(1.0f, 0.0f, 0.0f);
+	glColor3fv(col);
 	glBegin(GL_LINES);
 	{
 		const double size = 0.25;

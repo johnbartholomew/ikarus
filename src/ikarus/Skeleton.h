@@ -4,7 +4,7 @@
 // A Skeleton represents a set of bones and the joints between them
 // it provides methods to load the skeleton and get at the bone and joint information
 
-class Joint
+class JointConstraints
 {
 public:
 	enum JointType
@@ -16,14 +16,14 @@ public:
 		Pivot   // a pivot joint only allows twist
 	};
 
-	Joint()
+	JointConstraints()
 	:	type(Null),
 		minAzimuth(0.0), maxAzimuth(0.0),
 		minElevation(0.0), maxElevation(0.0),
 		minTwist(0.0), maxTwist(0.0)
 	{}
 
-	Joint(
+	JointConstraints(
 		JointType type
 	)
 	:	type(type),
@@ -32,7 +32,7 @@ public:
 		minTwist(0.0), maxTwist(0.0)
 	{}
 
-	Joint(
+	JointConstraints(
 		JointType type,
 		double minAzimuth, double maxAzimuth,
 		double minElevation, double maxElevation,
@@ -51,41 +51,40 @@ public:
 	double minTwist, maxTwist;
 };
 
-class Segment
+class Bone;
+
+struct Joint
+{
+	Joint(): a(0), b(0) {}
+
+	// constraints for the joint
+	JointConstraints constraints;
+	// which bones the joint connects
+	Bone *a;
+	Bone *b;
+};
+
+class Bone
 {
 public:
-	enum SegmentType
+	struct Connection
 	{
-		Root,
-		Bone,
-		Effector
+		explicit Connection(Joint *j, vec3d v): joint(j), pos(v) {}
+
+		// the joint that this connection goes to
+		Joint *joint;
+
+		// position of the joint in bone-space
+		// typically one joint will have a position of 0,0,0, but it's not required
+		vec3d pos;
 	};
-
-	SegmentType type;
-
-	// a unique name for the segment (valid for all three types)
 	std::string name;
+	std::vector<Connection> joints;
 
-	// only valid for segment types Root and Bone
-	vec3d displayVector; // the vector to use to display the bone
-
-	// valid for all three types
-	vec3d worldOrigin; // the origin position of the segment in world space
-	vec3d origin; // the origin position of the segment relative to its parent segment/joint
-
-	// the type and constraints for the joint connecting this bone to its parent
-	// only valid for segments of type Bone
-	Joint joint;
-
-	// display the segment
-	void render();
-
-private:
-	friend class Skeleton;
-	
-	int parent;
-	int childrenBegin;
-	int childrenEnd;
+	// all bones have an associated effector pos which is used to drag them (by IK)
+	// this is like a joint position except it isn't necessarily the connection point
+	// the effectorPos is also used when displaying the bone
+	vec3d effectorPos;
 };
 
 class Skeleton
@@ -96,47 +95,16 @@ public:
 
 	int getNumEffectors() const;
 	int getNumBones() const;
-
-	int getNumSegments() const;
-
-	Segment &getRoot() const;
-	Segment &getParent(const Segment &b) const;
-	std::vector<Segment>::iterator getChildrenBegin(const Segment &b) const;
-	std::vector<Segment>::iterator getChildrenEnd(const Segment &b) const;
+	int getNumJoints() const;
 private:
-	int numBones;
-	int numEffectors;
-	std::vector<Segment> segments;
+	refvector<Joint> joints;
+	refvector<Bone> bones;
+	vec3d rootPos;
 
-	void renderSegment(int idx, const vec3d &base) const;
-	void renderBone(const Segment &e, const vec3d &base) const;
-	void renderPoint(const Segment &e, const vec3d &base) const;
-};
+	void fixJointPositions(Bone &b, const vec3d &worldPos);
 
-// A pose represents a configuration that a skeleton can be in
-// it tracks the state of each joint and can be used to
-// query the position of a particular joint or effector
-class Pose
-{
-public:
-	struct JointState
-	{
-		// the rotation parameter values
-		double azimuth;
-		double elevation;
-		double twist;
-
-		// the baked rotation
-		quatd rot;
-	};
-
-	void render();
-
-	vec3d getSegmentPos();
-
-private:
-	Skeleton *skeleton;
-	std::vector<JointState> joints;
+	void renderBone(const Bone &e, const vec3d &base) const;
+	void renderPoint(const vec3f &col, const vec3d &pos) const;
 };
 
 #endif
