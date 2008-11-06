@@ -168,7 +168,7 @@ public:
 
 	void pop_back()
 	{
-		delete *(mItems.back());
+		delete (mItems.back());
 		mItems.pop_back();
 	}
 
