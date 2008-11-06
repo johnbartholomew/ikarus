@@ -61,7 +61,7 @@ def processBones(root, scale):
 		next_id += info.numChildren
 
 	# work out the parent ids
-	applyParentIds(bones, 0, 1, 0)
+	applyParentIds(bones, 0, 1, -1)
 
 	return bones
 
