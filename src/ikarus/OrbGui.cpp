@@ -5,14 +5,6 @@
 
 // ===== Helper Functions ====================================================
 
-bool inRect(const vec2i &v, const recti &bounds)
-{
-	vec2i v2(v - bounds.topLeft);
-	return
-		(v2.x >= 0) && (v2.y >= 0) &&
-		(v2.x < bounds.size.x) && (v2.y < bounds.size.y);
-}
-
 void boxPoints(const vec2i &a, const vec2i &b, int cornerRadius, bool line)
 {
 	if (line)
@@ -205,7 +197,7 @@ bool Button::run(OrbGui &gui, OrbLayout &lyt)
 
 	if (mEnabled)
 	{
-		if (inRect(gui.input->getMousePos(), bounds))
+		if (bounds.contains(gui.input->getMousePos()))
 			gui.requestHot(wid);
 		else
 			gui.releaseHot(wid);
@@ -267,7 +259,7 @@ bool CheckBox::run(OrbGui &gui, OrbLayout &lyt)
 
 	if (mEnabled)
 	{
-		if (inRect(gui.input->getMousePos(), bounds))
+		if (bounds.contains(gui.input->getMousePos()))
 			gui.requestHot(wid);
 		else
 			gui.releaseHot(wid);
@@ -349,8 +341,8 @@ double Slider::run(OrbGui &gui, OrbLayout &lyt)
 
 	if (mEnabled)
 	{
-		bool inControl = inRect(gui.input->getMousePos(), bounds);
-		bool inGrabber = inControl ? inRect(gui.input->getMousePos(), grabBox) : false;
+		bool inControl = bounds.contains(gui.input->getMousePos());
+		bool inGrabber = inControl ? grabBox.contains(gui.input->getMousePos()) : false;
 
 		if (inControl)
 			gui.requestHot(wid);
@@ -389,9 +381,9 @@ double Slider::run(OrbGui &gui, OrbLayout &lyt)
 			{
 				vec2i clickPos = gui.input->getMouseClickPos(MouseButton::Left);
 
-				if (inRect(clickPos, recti(grabBox.topLeft - vec2i(0, 2), grabBox.size + vec2i(0, 4))))
+				if (recti(grabBox.topLeft - vec2i(0, 2), grabBox.size + vec2i(0, 4)).contains(clickPos))
 					gui.setActive(wid);
-				else if (inRect(clickPos, bounds))
+				else if (bounds.contains(clickPos))
 				{
 					if (clickPos.x >= grabPos.x)
 						mValue += mStep;

@@ -145,6 +145,9 @@ public:
 	// beginFrame gives an opportunity to reset deltas
 	void beginFrame();
 
+	// update the window size
+	void windowResize(int x, int y);
+
 	// update the input with a mouse click
 	void mousePress(int button, int x, int y);
 	void mouseRelease(int button, int x, int y);
@@ -165,6 +168,9 @@ public:
 	void keyRelease(int key);
 
 	// ==== input state getters ====
+
+	vec2i getWindowSize() const
+	{ return mWindowSize; }
 
 	vec2i getMousePos() const
 	{ return mMousePos; }
@@ -215,6 +221,8 @@ private:
 		Pressed  = 3
 	};
 
+	// the window's current size (treated as input because the user can change it)
+	vec2i mWindowSize;
 	// the mouse position at the end of the frame
 	vec2i mMousePos;
 	// the mouse delta over the frame

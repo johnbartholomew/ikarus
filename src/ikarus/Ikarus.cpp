@@ -28,37 +28,34 @@ GLuint gridList;
 class Camera
 {
 public:
-	virtual void update() = 0;
-	virtual void render() const = 0;
-	virtual mat4d getProjection() const = 0;
+	virtual void update(const OrbInput &input, const recti &bounds) = 0;
+	virtual void renderUI(const recti &bounds) const = 0;
+	virtual mat4d getProjection(const recti &bounds) const = 0;
 	virtual mat4d getModelView() const = 0;
 };
 
 class CameraOrtho : public Camera
 {
 public:
-	CameraOrtho(int w, int h, int axis)
-		:	aspect((double)w / (double)h),
-			axis(axis),
+	CameraOrtho(int axis)
+		:	axis(axis),
 			scale(GridWidth/2.0) // nb: if you change this change update()
 	{
 	}
 
-	virtual void update()
+	virtual void update(const OrbInput &input, const recti &bounds)
 	{
-#if 0
-		int wheel = glfwGetMouseWheel();
+		int wheel = input.getMouseWheelPos();
 		// nb: if you change this change the CameraOrtho initializer
 		scale = (GridWidth/2.0) * std::pow(CameraDistWheelScale, -wheel);
-#endif
 	}
 
-	virtual void render() const {}
+	virtual void renderUI(const recti &bounds) const {}
 
-	virtual mat4d getProjection() const
+	virtual mat4d getProjection(const recti &bounds) const
 	{
-		double a = aspect*scale;
-		return vmath::ortho_matrix(-a, a, -scale, scale, 0.1, 100.0);
+		double aspect = (double)bounds.size.x / (double)bounds.size.y;
+		return vmath::ortho_matrix(-aspect, aspect, -1.0, 1.0, 0.1, 100.0);
 	}
 
 	virtual mat4d getModelView() const
@@ -91,7 +88,8 @@ public:
 				0.0, 0.0, 0.0, 1.0
 			);
 		}
-		return m * vmath::translation_matrix(0.0, -GridWidth/4.0, 0.0);
+
+		return vmath::scaling_matrix(1.0/scale, 1.0/scale, 1.0) * m * vmath::translation_matrix(0.0, -GridWidth/4.0, 0.0);
 	}
 private:
 	double aspect;
@@ -102,54 +100,117 @@ private:
 class CameraAzimuthElevation : public Camera
 {
 public:
-	CameraAzimuthElevation(int w, int h)
+	CameraAzimuthElevation()
 		:	dragging(false),
 			cameraDist(CameraDistance),
-			screenCentre(w/2, h/2),
-			screenRadius(std::min(w, h)/2.0),
 			az(0.0), el(0.0), az0(0.0), el0(0.0)
 	{
 	}
 
-	virtual void update()
+	virtual void update(const OrbInput &input, const recti &bounds)
 	{
-#if 0
-		int wheel = glfwGetMouseWheel();
+		const vec2i screenCentre = bounds.topLeft + vec2i(bounds.size.x/2, bounds.size.y/2);
+		const double screenRadius = std::min(bounds.size.x, bounds.size.y) / 2.0;
+
+		int wheel = input.getMouseWheelPos();
 		cameraDist = CameraDistance * std::pow(CameraDistWheelScale, -wheel);
 
-		vec2i mousePos;
-		glfwGetMousePos(&mousePos.x, &mousePos.y);
-		if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+		vec2i mousePos = input.getMousePos();
+		if (input.isMouseDown(MouseButton::Left))
 		{
 			if (!dragging)
 			{
-				dragging = true;
-				startDrag(mousePos);
+				if (bounds.contains(mousePos))
+				{
+					dragging = true;
+					startDrag(screenCentre, screenRadius, mousePos);
+				}
 			}
 			else
-				updateDrag(mousePos);
+				updateDrag(screenCentre, screenRadius, mousePos);
 		}
 		else
 		{
 			if (dragging)
 			{
-				updateDrag(mousePos);
+				updateDrag(screenCentre, screenRadius, mousePos);
 				dragging = false;
 			}
 		}
-#endif
 	}
 
-	void startDrag(const vec2i &pos)
+	virtual mat4d getProjection(const recti &bounds) const
 	{
-		pt0 = pt1 = screenToSphere(pos);
+		double aspect = (double)bounds.size.x / (double)bounds.size.y;
+		double sx = (double)bounds.size.x / 2.0;
+		double sy = (double)bounds.size.y / 2.0;
+		double x = (double)bounds.topLeft.x + sx;
+		double y = (double)bounds.topLeft.y + sy;
+		return mat4d(
+			sx , 0.0, 0.0,   x,
+			0.0, -sy, 0.0,   y,
+			0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		) * vmath::perspective_matrix(FoV, aspect, zNear, zFar);
+	}
+
+	virtual mat4d getModelView() const
+	{
+		return vmath::translation_matrix(0.0, -GridWidth/4.0, -cameraDist) * vmath::azimuth_elevation_matrix(az, el);
+	}
+
+	virtual void renderUI(const recti &bounds) const
+	{
+		const vec2i screenCentre = bounds.topLeft + vec2i(bounds.size.x/2, bounds.size.y/2);
+		const double screenRadius = std::min(bounds.size.x, bounds.size.y) / 2.0;
+
+		if (dragging)
+		{
+			glDisable(GL_TEXTURE_2D);
+
+			vec2i pos0 = sphereToScreen(screenCentre, screenRadius, pt0);
+			vec2i pos1 = sphereToScreen(screenCentre, screenRadius, pt1);
+
+			glPointSize(5.0);
+			glBegin(GL_POINTS);
+			glColor3f(0.0f, 1.0f, 0.0f);
+			glVertex2i(pos0.x, pos0.y);
+
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glVertex2i(pos1.x, pos1.y);
+			glEnd();
+
+			glColor3f(0.7f, 0.7f, 0.7f);
+			glBegin(GL_LINE_STRIP);
+			const int N = 30;
+			for (int i = 0; i <= N; ++i)
+			{
+				double a = (double)i / (double)N;
+				vec2i p = sphereToScreen(screenCentre, screenRadius, slerp(quatd(pt0, 0.0), quatd(pt1, 0.0), a).v);
+				glVertex2i(p.x, p.y);
+			}
+			glEnd();
+		}
+	}
+
+private:
+	bool dragging;
+	double cameraDist;
+
+	vec3d pt0, pt1;
+	double az0, el0;
+	double az, el;
+
+	void startDrag(const vec2i &screenCentre, double screenRadius, const vec2i &pos)
+	{
+		pt0 = pt1 = screenToSphere(screenCentre, screenRadius, pos);
 		az0 = az;
 		el0 = el;
 	}
 	
-	void updateDrag(const vec2i &pos)
+	void updateDrag(const vec2i &screenCentre, double screenRadius, const vec2i &pos)
 	{
-		pt1 = screenToSphere(pos);
+		pt1 = screenToSphere(screenCentre, screenRadius, pos);
 
 		vec3d a, b;
 
@@ -169,65 +230,20 @@ public:
 		el = el0 + deltaEl;
 	}
 
-	virtual mat4d getProjection() const
-	{
-		return vmath::perspective_matrix(FoV, Aspect, zNear, zFar);
-	}
-
-	virtual mat4d getModelView() const
-	{
-		return vmath::translation_matrix(0.0, -GridWidth/4.0, -cameraDist) * vmath::azimuth_elevation_matrix(az, el);
-	}
-
-	virtual void render() const
-	{
-		if (dragging)
-		{
-			glDisable(GL_TEXTURE_2D);
-
-			vec2i pos0 = sphereToScreen(pt0);
-			vec2i pos1 = sphereToScreen(pt1);
-
-			glPointSize(5.0);
-			glBegin(GL_POINTS);
-			glColor3f(0.0f, 1.0f, 0.0f);
-			glVertex2i(pos0.x, pos0.y);
-
-			glColor3f(1.0f, 1.0f, 1.0f);
-			glVertex2i(pos1.x, pos1.y);
-			glEnd();
-
-			glColor3f(0.7f, 0.7f, 0.7f);
-			glBegin(GL_LINE_STRIP);
-			const int N = 30;
-			for (int i = 0; i <= N; ++i)
-			{
-				double a = (double)i / (double)N;
-				vec2i p = sphereToScreen(slerp(quatd(pt0, 0.0), quatd(pt1, 0.0), a).v);
-				glVertex2i(p.x, p.y);
-			}
-			glEnd();
-		}
-	}
-
-private:
-	bool dragging;
-	double cameraDist;
-	vec2i screenCentre;
-	double screenRadius;
-
-	vec3d pt0, pt1;
-	double az0, el0;
-	double az, el;
-
 	// constrains a point on the unit sphere to the given axis (0 = x, 1 = y, 2 = z)
 	vec3d constrainToAxis(vec3d pt, int axis) const
 	{
 		pt[axis] = 0.0;
-		return normalize(pt);
+		if (dot(pt, pt) <= 0.00001)
+		{
+			// FIXME: vector is nearly zero, what should we do?!
+			return vec3d(0.0, 0.0, 0.0);
+		}
+		else
+			return normalize(pt);
 	}
 
-	vec3d screenToSphere(vec2i pos) const
+	vec3d screenToSphere(const vec2i &screenCentre, double screenRadius, vec2i pos) const
 	{
 		pos -= screenCentre;
 		pos.y *= -1;
@@ -243,7 +259,7 @@ private:
 		return v;
 	}
 
-	vec2i sphereToScreen(const vec3d &pt) const
+	vec2i sphereToScreen(const vec2i &screenCentre, const double screenRadius, const vec3d &pt) const
 	{
 		vec2i pos((int)(pt.x*screenRadius), (int)(pt.y*screenRadius));
 		pos.y *= -1;
@@ -308,46 +324,85 @@ void initGL()
 	glEndList();
 }
 
-void renderScene(Skeleton &skel, const Camera &cam)
+class SkeletonDisplay : public OrbWidget
 {
-	glDisable(GL_TEXTURE_2D);
+public:
+	SkeletonDisplay(const WidgetID &wid, Camera *camera, Skeleton *skeleton)
+		: OrbWidget(wid), mCamera(camera), mSkeleton(skeleton) {}
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixd(cam.getProjection());
+	void run(OrbGui &gui, OrbLayout &lyt)
+	{
+		vec2i wndSize = gui.input->getWindowSize();
+		recti bounds = lyt.place(vec2i(0, 0));
+		double aspect = (double)bounds.size.x / (double)bounds.size.y;
+		
+		// update input
+		mCamera->update(*gui.input, bounds);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixd(cam.getModelView());
+		glEnable(GL_SCISSOR_TEST);
+		glScissor(bounds.topLeft.x, wndSize.y - (bounds.topLeft.y + bounds.size.y), bounds.size.x, bounds.size.y);
 
-	glCallList(gridList);
-	glColor3f(1.0f, 1.0f, 1.0f);
-	skel.render();
-}
+		mat4d proj = mCamera->getProjection(bounds);
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glMultMatrixd(proj);
 
-void renderOverlay(const Camera &cam)
+		mat4d view = mCamera->getModelView();
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadMatrixd(view);
+
+		glDisable(GL_TEXTURE_2D);
+		glCallList(gridList);
+		glColor3f(1.0f, 1.0f, 1.0f);
+		mSkeleton->render();
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0.0, (double)wndSize.x, (double)wndSize.y, 0.0, -1.0, 1.0);
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		mCamera->renderUI(bounds);
+
+		glDisable(GL_TEXTURE_2D);
+		glColor3f(1.0f, 1.0f, 1.0f);
+		glBegin(GL_LINE_LOOP);
+		glVertex2i(bounds.topLeft.x, bounds.topLeft.y);
+		glVertex2i(bounds.topLeft.x + bounds.size.x, bounds.topLeft.y);
+		glVertex2i(bounds.topLeft.x + bounds.size.x, bounds.topLeft.y + bounds.size.y);
+		glVertex2i(bounds.topLeft.x, bounds.topLeft.y + bounds.size.y);
+		glEnd();
+
+		// reset the matrices and viewport
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+		
+		glDisable(GL_SCISSOR_TEST);
+	}
+private:
+	Skeleton *mSkeleton;
+	Camera *mCamera;
+};
+
+void renderGui(OrbGui &gui, Camera &cam, Skeleton &skel)
 {
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	cam.render();
-}
-
-void render(Skeleton &skel, const Camera &cam)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	renderScene(skel, cam);
-	renderOverlay(cam);
-}
-
-void renderGui(OrbGui &gui, OrbWindow &wnd)
-{
-	static bool showControls = false;
+	// GUI state
+	static bool showControls = true;
 	static double sliderVal = 50.0;
+
+	vec2i wndSize = gui.input->getWindowSize();
+
+	// set up the default projection & modelview matrices
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0, (double)wndSize.x, (double)wndSize.y, 0.0, 1.0, -1.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 	
-	ColumnLayout lyt(FixedLayout(10, 10, 200, wnd.getSize().y), 10, 10, 10, 10, 3);
+	ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
 
 	Label("title", "MONKEY").run(gui, lyt);
 	showControls = CheckBox("show", "Show Controls", showControls).run(gui, lyt);
@@ -362,6 +417,16 @@ void renderGui(OrbGui &gui, OrbWindow &wnd)
 		if (Button("hide-btn", "Hide").run(gui, lyt))
 			showControls = false;
 	}
+
+	int leftRightSplit = 250;
+	int topBottomSplit = wndSize.y - 200;
+	int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
+	int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
+
+	SkeletonDisplay("display", &cam, &skel).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
+	Button("x-ortho", "X").run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
+	Button("y-ortho", "Y").run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
+	Button("z-ortho", "Z").run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
 }
 
 #ifdef _WIN32
@@ -396,34 +461,28 @@ int main(int argc, char *argv[])
 		OrbGui gui(&wnd.input, gFont, gTextRenderer);
 
 		// set up the cameras
-		CameraAzimuthElevation cameraPerspective(800, 600);
-		CameraOrtho cameraX(800, 600, 0);
-		CameraOrtho cameraY(800, 600, 1);
-		CameraOrtho cameraZ(800, 600, 2);
+		CameraAzimuthElevation cameraPerspective;
+		CameraOrtho cameraX(0);
+		CameraOrtho cameraY(1);
+		CameraOrtho cameraZ(2);
 
 		// pick the default camera
 		Camera *cam = &cameraPerspective;
 
 		wnd.input.beginFrame();
-		while (Window::ProcessWaitingMessages(&retval))
+		while (true)
 		{
-			glClear(GL_COLOR_BUFFER_BIT);
-			
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			vec2i sz = wnd.getSize();
-			glOrtho(0.0, (double)sz.x, (double)sz.y, 0.0, -1.0, 1.0);
+			wnd.input.beginFrame();
 
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-
-			renderGui(gui, wnd);
+			if (! Window::ProcessWaitingMessages(&retval))
+				break;
 
 			if (wnd.input.wasKeyPressed(KeyCode::Escape))
 				break;
 
+			glClear(GL_COLOR_BUFFER_BIT);
+			renderGui(gui, *cam, skel);
 			wnd.flipGL();
-			wnd.input.beginFrame();
 		}
 
 		{

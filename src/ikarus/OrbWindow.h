@@ -17,18 +17,13 @@ public:
 	void open(const wchar_t *title, int width, int height);
 	void flipGL();
 
-	vec2i getSize() const
-	{ return mSize; }
-
 	OrbInput input;
 protected:
 	virtual LRESULT handleMessage(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-	void initViewport();
+	void handleSize(int x, int y);
 	void handleDropFiles(HDROP dropHandle);
-
-	vec2i mSize;
 
 	OpenGLContext mOpenGLContext;
 	WindowRenderTarget mOpenGLTarget;

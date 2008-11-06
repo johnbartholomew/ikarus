@@ -14,8 +14,6 @@ OrbWindow::~OrbWindow()
 
 void OrbWindow::open(const wchar_t *title, int width, int height)
 {
-	mSize = vec2i(width, height);
-
 	HINSTANCE inst = GetModuleHandle(NULL);
 	MainWindow::open(kOrbWindowClass, title, LoadIcon(inst, MAKEINTRESOURCE(ICO_MAIN)), width, height);
 
@@ -28,9 +26,10 @@ void OrbWindow::flipGL()
 	mOpenGLContext.swapBuffers();
 }
 
-void OrbWindow::initViewport()
+void OrbWindow::handleSize(int x, int y)
 {
-	glViewport(0, 0, mSize.x, mSize.y);
+	input.windowResize(x, y);
+	glViewport(0, 0, x, y);
 }
 
 void OrbWindow::handleDropFiles(HDROP dropHandle)
@@ -104,8 +103,7 @@ LRESULT OrbWindow::handleMessage(UINT msg, WPARAM wparam, LPARAM lparam)
 	case WM_CREATE:
 		{
 			CREATESTRUCT *info = reinterpret_cast<CREATESTRUCT*>(lparam);
-			mSize = vec2i(info->cx, info->cy);
-			initViewport();
+			handleSize(info->cx, info->cy);
 		}
 		return MainWindow::handleMessage(msg, wparam, lparam);
 	case WM_ERASEBKGND:
@@ -113,11 +111,10 @@ LRESULT OrbWindow::handleMessage(UINT msg, WPARAM wparam, LPARAM lparam)
 		return 1;
 	case WM_SIZE:
 		{
-			mSize = vec2i(
+			handleSize(
 				static_cast<signed short>(LOWORD(lparam)),
 				static_cast<signed short>(HIWORD(lparam))
 			);
-			initViewport();
 		}
 		return 0;
 

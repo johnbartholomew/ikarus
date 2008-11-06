@@ -2,7 +2,8 @@
 #include "OrbInput.h"
 
 OrbInput::OrbInput()
-:	mMousePos(0, 0),
+:	mWindowSize(0, 0),
+	mMousePos(0, 0),
 	mMouseDelta(0, 0),
 	mWheelPos(0),
 	mWheelDelta(0)
@@ -27,6 +28,11 @@ void OrbInput::beginFrame()
 		// reset the changed flag
 		mKeyState[i] &= Down;
 	}
+}
+
+void OrbInput::windowResize(int x, int y)
+{
+	mWindowSize = vec2i(x, y);
 }
 
 void OrbInput::mousePress(int button, int x, int y)
