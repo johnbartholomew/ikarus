@@ -58,6 +58,14 @@ namespace vmath
 		bool operator!=(const rect<T> &b) const
 		{ return !(*this == b); }
 
+		bool contains(const vec2<T> &v) const
+		{
+			vec2<T> v2(v - topLeft);
+			return
+				(v2.x >= 0) && (v2.y >= 0) &&
+				(v2.x < size.x) && (v2.y < size.y);
+		}
+
 		vec2<T> topLeft;
 		vec2<T> size;
 	};
