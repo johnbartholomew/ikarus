@@ -3,7 +3,6 @@
 
 // global standard libraries
 
-
 #include <stdexcept>
 #include <cassert>
 #include <cstdlib>
@@ -89,5 +88,19 @@ typedef vmath::mat3<double> mat3d;
 typedef vmath::mat4<double> mat4d;
 
 typedef vmath::quat<double> quatd;
+
+// ===== Configuration Constants =====
+
+const double CameraDistance = 30.0;
+const double Aspect = 4.0 / 3.0;
+const double FoV = 40.0 * (M_PI/180.0);
+const double zNear = 0.1;
+const double zFar = 100.0;
+const double CameraDistWheelScale = 1.1;
+
+const int GridCount = 10;
+const double GridWidth = 20.0;
+
+const double MoveStep = 0.2;
 
 #endif
