@@ -53,11 +53,12 @@ public:
 
 class Bone;
 
-struct Joint
+class Joint
 {
+public:
 	explicit Joint(int id): id(id), a(0), b(0) {}
 
-	int id;
+	const int id;
 	// constraints for the joint
 	JointConstraints constraints;
 	// which bones the joint connects
@@ -82,7 +83,7 @@ public:
 
 	explicit Bone(int id): id(id), effectorPos(0.0, 0.0, 0.0) {}
 
-	int id;
+	const int id;
 	std::string name;
 	std::vector<Connection> joints;
 
@@ -125,97 +126,6 @@ private:
 	void fixJointPositions(Bone &b, const vec3d &worldPos);
 
 	void renderBone(const Bone &b, const vec3d &base) const;
-};
-
-class Pose
-{
-public:
-	struct JointState
-	{
-		JointState(): orientA(vmath::identityq<double>()), orientB(vmath::identityq<double>()) {}
-		explicit JointState(quatd a, quatd b): orientA(a), orientB(b) {}
-
-		vec3d worldPos;
-		quatd orientA;
-		quatd orientB;
-	};
-
-	Pose();
-	explicit Pose(Skeleton &skel);
-
-	void reset();
-	void render() const;
-
-	const vec3d &getJointPos(const Joint &j);
-
-	const Joint &getRoot() const;
-	const vec3d &getRootPos() const;
-	void setRoot(const Joint &j);
-	void setRootPos(const vec3d &pos);
-	const JointState &getJointState(const Joint &j);
-	void setJointState(const Joint &j, const JointState &js);
-private:
-	const Skeleton *skeleton;
-	std::vector<JointState> jointStates;
-	const Joint *root;
-	vec3d rootPos;
-	bool jointPositionsDirty;
-
-	void updateJointPositions();
-	void updateJointPos(const Bone *fromBone, const Joint &j, const mat4d &basis);
-	void updateBoneJointPos(const Joint *fromJoint, const Bone &b, const mat4d &basis);
-
-	void renderJoint(const Bone *fromBone, const Joint &j, const mat4d &basis) const;
-	void renderBone(const Joint *fromJoint, const Bone &b, const mat4d &basis) const;
-};
-
-class IkSolver
-{
-public:
-	void setPose(const Pose &from);
-	void setRoot(const Joint &root);
-	void setEffector(const Bone &b);
-	void setTargetPos(const vec3d &pos);
-
-	const Pose &getCurrentPose() const;
-
-	Pose solveIk(const Pose &from, const Joint &root, const Bone &effector, const vec3d &target, int maxIterations = 20);
-
-	virtual void solveIk(int maxIterations) = 0;
-	virtual void iterateIk() = 0;
-
-	void render() const;
-protected:
-	Pose currentPose;
-	vec3d targetPos;
-	const Joint *root;
-	vec3d rootPos;
-	const Bone *effector;
-};
-
-class IkSolverCCD : public IkSolver
-{
-public:
-	virtual void solveIk(int maxIterations);
-	virtual void iterateIk();
-
-private:
-	struct IkLink
-	{
-		explicit IkLink(const Joint &j, const Bone &b, const vec3d &pos): joint(&j), bone(&b), worldPos(pos) {}
-		const Joint *joint;
-		const Bone *bone;
-		vec3d worldPos; // position of the joint
-	};
-
-	std::vector<IkLink> chain;
-	vec3d effectorPos;
-
-	vec3d ikStep();
-
-	void findChain();
-	bool findChainBone(const Joint *fromJoint, const Bone &b, const mat4d &basis);
-	bool findChainJoint(const Bone *fromBone, const Joint &j, const mat4d &basis);
 };
 
 #endif

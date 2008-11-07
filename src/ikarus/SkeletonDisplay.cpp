@@ -1,7 +1,7 @@
 #include "Global.h"
 #include "SkeletonDisplay.h"
 #include "Camera.h"
-#include "Skeleton.h"
+#include "IkSolver.h"
 #include "OrbGui.h"
 #include "OrbInput.h"
 

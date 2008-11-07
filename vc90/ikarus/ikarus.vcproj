@@ -192,7 +192,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\ikarus\GfxUtil.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ikarus\Ikarus.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\IkSolver.cpp"
 				>
 			</File>
 			<File
@@ -230,6 +238,10 @@
 						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Pose.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\src\ikarus\Skeleton.cpp"
@@ -274,11 +286,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\ikarus\GfxUtil.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ikarus\Global.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\src\ikarus\IkGui.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\IkSolver.h"
 				>
 			</File>
 			<File
@@ -303,6 +323,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\ikarus\OrbWindow.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\Pose.h"
 				>
 			</File>
 			<File

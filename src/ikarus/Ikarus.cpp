@@ -7,6 +7,8 @@
 
 #include "Font.h"
 #include "Skeleton.h"
+#include "Pose.h"
+#include "IkSolver.h"
 
 TextRenderer *gTextRenderer = 0;
 Font *gFont = 0;
