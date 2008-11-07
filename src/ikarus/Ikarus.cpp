@@ -72,9 +72,6 @@ void initGL()
 void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, Skeleton &skel, Pose &pose)
 {
 	// GUI state
-	static bool showControls = true;
-	static double sliderVal = 50.0;
-
 	vec2i wndSize = gui.input->getWindowSize();
 
 	// set up the default projection & modelview matrices
@@ -86,18 +83,14 @@ void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, 
 	
 	ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
 
-	Label("title", "MONKEY").run(gui, lyt);
-	showControls = CheckBox("show", "Show Controls", showControls).run(gui, lyt);
-
-	if (showControls)
+	Label("title", "Ikarus").run(gui, lyt);
+	if (Button("next-root-btn", "Next Root").run(gui, lyt) ||
+		gui.input->wasKeyPressed(KeyCode::N))
 	{
-		Label("hello", "Hello, world!").run(gui, lyt);
-		sliderVal = Slider("value", 0.0, 100.0, 10.0, sliderVal, true).run(gui, lyt);
-		std::ostringstream ss;
-		ss << sliderVal;
-		Label("value-lbl", ss.str()).run(gui, lyt);
-		if (Button("hide-btn", "Hide").run(gui, lyt))
-			showControls = false;
+		int id = pose.getRoot().id + 1;
+		if (id >= skel.getNumJoints())
+			id = 0;
+		pose.setRoot(skel.getJoint(id));
 	}
 
 	int leftRightSplit = 250;
