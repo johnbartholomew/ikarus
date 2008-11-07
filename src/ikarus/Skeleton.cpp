@@ -252,17 +252,17 @@ int Skeleton::getNumEffectors() const
 	return numEffectors;
 }
 
-Joint &Skeleton::getDefaultRoot()
-{
-	return joints[0];
-}
-
-const vec3d &Skeleton::getDefaultRootPos()
+const vec3d &Skeleton::getDefaultRootPos() const
 {
 	return rootPos;
 }
 
 // ===== Pose ================================================================
+
+Pose::Pose()
+:	skeleton(0), root(0), rootPos(0.0, 0.0, 0.0), jointPositionsDirty(true)
+{
+}
 
 Pose::Pose(Skeleton &skel)
 :	skeleton(&skel),
@@ -290,7 +290,7 @@ void Pose::reset()
 	jointPositionsDirty = true;
 }
 
-vec3d Pose::getJointPos(Joint &j)
+const vec3d &Pose::getJointPos(const Joint &j)
 {
 	updateJointPositions();
 	return jointStates[j.id].worldPos;
@@ -306,7 +306,7 @@ const vec3d &Pose::getRootPos() const
 	return rootPos;
 }
 
-void Pose::setRoot(Joint &j)
+void Pose::setRoot(const Joint &j)
 {
 	rootPos = getJointPos(j);
 	root = &j;
@@ -317,11 +317,17 @@ void Pose::setRootPos(const vec3d &pos)
 	rootPos = pos;
 }
 
-const Pose::JointState &Pose::getState(const Joint &j)
+const Pose::JointState &Pose::getJointState(const Joint &j)
 {
 	assert(j.id >= 0 && j.id < (int)jointStates.size());
 	updateJointPositions();
 	return jointStates[j.id];
+}
+
+void Pose::setJointState(const Joint &j, const JointState &js)
+{
+	jointStates[j.id] = js;
+	jointPositionsDirty = true;
 }
 
 void Pose::updateJointPositions()
@@ -333,7 +339,7 @@ void Pose::updateJointPositions()
 	}
 }
 
-void Pose::updateJointPos(Bone *fromBone, Joint &j, const mat4d &basis)
+void Pose::updateJointPos(const Bone *fromBone, const Joint &j, const mat4d &basis)
 {
 	JointState &js = jointStates[j.id];
 	js.worldPos = vec3d(basis.elem[3][0], basis.elem[3][1], basis.elem[3][2]);
@@ -342,7 +348,7 @@ void Pose::updateJointPos(Bone *fromBone, Joint &j, const mat4d &basis)
 	if (j.b && (j.b != fromBone)) updateBoneJointPos(&j, *j.b, basis * quat_to_mat4(js.orientB));
 }
 
-void Pose::updateBoneJointPos(Joint *fromJoint, Bone &b, const mat4d &basis)
+void Pose::updateBoneJointPos(const Joint *fromJoint, const Bone &b, const mat4d &basis)
 {
 	vec3d origin;
 	for (int i = 0; i < (int)b.joints.size(); ++i)
@@ -364,7 +370,7 @@ void Pose::updateBoneJointPos(Joint *fromJoint, Bone &b, const mat4d &basis)
 	}
 }
 
-void Pose::render()
+void Pose::render() const
 {
 	renderPoint(vec3f(1.0f, 0.0f, 0.0f), rootPos);
 	renderJoint(0, *root, vmath::translation_matrix(rootPos));
@@ -414,92 +420,176 @@ void Pose::renderBone(const Joint *fromJoint, const Bone &b, const mat4d &basis)
 	}
 }
 
-// ===========================================================================
+// ===== IkSolver ============================================================
 
-#if 0
-void Skeleton::iterateIK()
+void IkSolver::setPose(const Pose &from)
 {
-	ikStep(0, vec3d(0.0, 0.0, 0.0));
+	currentPose = from;
 }
 
-void Skeleton::solveIK()
+void IkSolver::setRoot(const Joint &j)
+{
+	root = &j;
+	rootPos = currentPose.getJointPos(j);
+}
+
+void IkSolver::setEffector(const Bone &b)
+{
+	effector = &b;
+}
+
+void IkSolver::setTargetPos(const vec3d &pos)
+{
+	targetPos = pos;
+}
+
+const Pose &IkSolver::getCurrentPose() const
+{
+	return currentPose;
+}
+
+Pose IkSolver::solveIk(const Pose &from, const Joint &root, const Bone &effector, const vec3d &target, int maxIterations)
+{
+	setPose(from);
+	setRoot(root);
+	setEffector(effector);
+	setTargetPos(target);
+
+	this->solveIk(maxIterations);
+
+	return currentPose;
+}
+
+void IkSolver::render() const
+{
+	currentPose.render();
+	renderPoint(vec3f(0.0f, 1.0f, 0.0f), targetPos);
+}
+
+// ===== IkSolverCCD =========================================================
+
+void IkSolverCCD::solveIk(int maxIterations)
 {
 	const double TargetError = 0.0001;
-	const int MaxTries = 50;
 	int tries = 0;
 
-	vec3d target = targetPos;
-
-	// if the target is further away than we can reach, then pretend it's just within reach but in the same direction
-	double totalLen = 0.0;
-	for (std::vector<Bone>::const_iterator it = bones.begin(); it != bones.end(); ++it)
-		totalLen += it->length;
-	double targetDist = length(target);
-	if (targetDist > totalLen)
-		target *= (totalLen / targetDist);
+	findChain();
 
 	vec3d tip;
 	vec3d delta;
 	do
 	{
-		tip = ikStep(0, vec3d(0.0, 0.0, 0.0));
-		delta = tip - target;
+		tip = ikStep();
+		delta = tip - targetPos;
 		++tries;
-	} while ((tries < MaxTries) && (dot(delta, delta) > TargetError));
+	} while ((tries < maxIterations) && (dot(delta, delta) > TargetError));
 }
 
-vec3d Skeleton::ikStep(int boneIdx, const vec3d &root)
+void IkSolverCCD::iterateIk()
 {
-	Bone &b = bones[boneIdx];
-	const vec3d end = b.orient + root;
+	findChain();
+	ikStep();
+}
 
-	vec3d tip(end);
+vec3d IkSolverCCD::ikStep()
+{
+	const IkLink &effectorLink = chain.front();
+	vec3d effectorPos = this->effectorPos;
 
-	if (b.childrenEnd > b.childrenBegin)
+	std::vector<IkLink>::const_iterator it = chain.begin();
+	while (it != chain.end())
 	{
-		// can currently only deal with exactly 0 or 1 children
-		assert(b.childrenEnd - b.childrenBegin == 1);
-		for (int i = b.childrenBegin; i != b.childrenEnd; ++i)
-			tip = ikStep(i, end);
+		const Bone &b = *it->bone;
+		const Joint &j = *it->joint;
+		const Pose::JointState &js = currentPose.getJointState(j);
+
+		const vec3d base = it->worldPos;
+
+		vec3d v0 = effectorPos - base;
+		vec3d v1 = targetPos - base;
+
+		// now we've stored the next base, we can work out the rotation to apply
+		double angle;
+		double v0dotv1 = dot(v0, v1);
+		if (v0dotv1 > 1.0)
+			angle = 0.0; // angle is 0 with some floating point errors
+		else if (v0dotv1 < -1.0)
+			angle = M_PI; // angle is 180 with some floating point errors
+		else
+			angle = std::acos(v0dotv1);
+
+		if (abs(angle) > 0.0001)
+		{
+			vec3d axis = cross(v0, v1);
+
+			quatd rot = quat_from_axis_angle(axis, angle);
+
+			Pose::JointState njs(js);
+			if (j.a == &b)
+				njs.orientA = njs.orientA * rot;
+			else
+				njs.orientB = njs.orientB * rot;
+
+			currentPose.setJointState(j, njs);
+			effectorPos = base + rot*v0;
+		}
+
+		++it;
 	}
 
-	vec3d v0 = tip - root;
-	vec3d v1 = targetPos - root;
-
-	if (abs(dot(v1, v1)) < 0.01 || abs(dot(v0, v0)) < 0.01)
-		return tip;
-
-	v0 = normalize(v0);
-	v1 = normalize(v1);
-
-	double v0dotv1 = dot(v0, v1);
-	if (v0dotv1 > 1.0)
-		// 0 degrees
-		return tip;
-	if (v0dotv1 < -1.0)
-		// 180 degrees with some floating point errors
-		v0dotv1 = -1.0;
-
-	double angle = std::acos(v0dotv1);
-	if (abs(angle) < 0.0001)
-		return tip;
-
-	vec3d axis = cross(v0, v1);
-
-	mat4d rot = rotation_matrix(angle, axis);
-
-	assert(b.orient.hasvalidfloats());
-	b.orient = transform_vector(rot, b.orient);
-	assert(b.orient.hasvalidfloats());
-	
-	assert(tip.hasvalidfloats());
-	tip = root + transform_vector(rot, tip - root);
-	assert(tip.hasvalidfloats());
-
-	// re-normalize to the correct length
-	b.orient = b.orient * (b.length / length(b.orient));
-
-	return tip;
+	return effectorPos;
 }
 
-#endif
+void IkSolverCCD::findChain()
+{
+	chain.clear();
+	findChainJoint(0, *root, vmath::translation_matrix(rootPos));
+}
+
+bool IkSolverCCD::findChainJoint(const Bone *fromBone, const Joint &j, const mat4d &basis)
+{
+	bool found = false;
+	const Pose::JointState &js = currentPose.getJointState(j);
+	if (j.a && (j.a != fromBone))
+		found = findChainBone(&j, *j.a, basis * quat_to_mat4(js.orientA));
+	if (j.b && (j.b != fromBone) && !found)
+		found = findChainBone(&j, *j.b, basis * quat_to_mat4(js.orientB));
+	return found;
+}
+
+bool IkSolverCCD::findChainBone(const Joint *fromJoint, const Bone &b, const mat4d &basis)
+{
+	vec3d origin;
+	for (int i = 0; i < (int)b.joints.size(); ++i)
+	{
+		Joint &j = *b.joints[i].joint;
+		if (&j != fromJoint) continue;
+		origin = b.joints[i].pos;
+		break;
+	}
+	mat4d bonespace = basis * vmath::translation_matrix(-origin);
+
+	if (&b == effector)
+	{
+		this->effectorPos = transform_point(bonespace, b.effectorPos);
+		const vec3d pos(bonespace.elem[3][0], bonespace.elem[3][1], bonespace.elem[3][2]);
+		chain.push_back(IkLink(*fromJoint, b, pos));
+		return true;
+	}
+
+	for (int i = 0; i < (int)b.joints.size(); ++i)
+	{
+		const Joint &j = *b.joints[i].joint;
+		if (&j != fromJoint)
+		{
+			if (findChainJoint(&b, j, bonespace * vmath::translation_matrix(b.joints[i].pos)))
+			{
+				const vec3d pos(basis.elem[3][0], basis.elem[3][1], basis.elem[3][2]);
+				chain.push_back(IkLink(*fromJoint, b, pos));
+				return true;
+			}
+		}
+	}
+
+	return false;
+}

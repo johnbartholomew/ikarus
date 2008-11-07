@@ -69,7 +69,7 @@ void initGL()
 	glEndList();
 }
 
-void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, Skeleton &skel, Pose &pose)
+void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, const Skeleton &skel, const Pose &pose)
 {
 	// GUI state
 	vec2i wndSize = gui.input->getWindowSize();
@@ -87,10 +87,7 @@ void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, 
 	if (Button("next-root-btn", "Next Root").run(gui, lyt) ||
 		gui.input->wasKeyPressed(KeyCode::N))
 	{
-		int id = pose.getRoot().id + 1;
-		if (id >= skel.getNumJoints())
-			id = 0;
-		pose.setRoot(skel.getJoint(id));
+		// switch to the next root
 	}
 
 	int leftRightSplit = 250;
@@ -127,6 +124,12 @@ int main(int argc, char *argv[])
 
 		Pose pose(skel);
 
+		IkSolverCCD solver;
+		solver.setPose(pose);
+		solver.setRoot(skel.getDefaultRoot());
+		solver.setEffector(skel.getBone(19)); // the right hand
+		solver.setTargetPos(vec3d(-4.5, 7.0, 1.0)); // up and to the right a bit...
+
 		// load the default font
 		Font font;
 		//font.loadFromFile("arial-rounded-18.fnt");
@@ -158,7 +161,8 @@ int main(int argc, char *argv[])
 				break;
 
 			glClear(GL_COLOR_BUFFER_BIT);
-			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, skel, pose);
+			solver.iterateIk();
+			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, skel, solver.getCurrentPose());
 			wnd.flipGL();
 		}
 
