@@ -228,17 +228,12 @@ void Skeleton::renderBone(const Bone &b, const vec3d &base) const
 	b.render(vec3f(1.0f, 1.0f, 1.0f));
 	glPopMatrix();
 
-	if (b.joints.size() == 1)
-		renderPoint(vec3f(1.0f, 1.0f, 0.0f), base + b.effectorPos);
-	else
+	for (int i = 1; i < (int)b.joints.size(); ++i)
 	{
-		for (int i = 1; i < (int)b.joints.size(); ++i)
-		{
-			const Bone::Connection &c = b.joints[i];
-			Bone *child = c.joint->a;
-			assert (child != 0);
-			renderBone(*child, c.pos + base);
-		}
+		const Bone::Connection &c = b.joints[i];
+		Bone *child = c.joint->a;
+		assert (child != 0);
+		renderBone(*child, c.pos + base);
 	}
 }
 

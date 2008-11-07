@@ -92,10 +92,11 @@ void CameraAzimuthElevation::update(const OrbInput &input, const recti &bounds)
 	{
 		if (!dragging)
 		{
-			if (bounds.contains(mousePos))
+			vec2i clickPos = input.getMouseClickPos(MouseButton::Right);
+			if (bounds.contains(clickPos))
 			{
 				dragging = true;
-				startDrag(screenCentre, screenRadius, mousePos);
+				startDrag(screenCentre, screenRadius, clickPos);
 			}
 		}
 		else
@@ -177,15 +178,22 @@ void CameraAzimuthElevation::updateDrag(const vec2i &screenCentre, double screen
 	pt1 = screenToSphere(screenCentre, screenRadius, pos);
 
 	vec3d a, b;
+	double dotAB;
 
 	a = constrainToAxis(pt0, 1);
 	b = constrainToAxis(pt1, 1);
+	dotAB = dot(a, b);
+	if (dotAB > 1.0) dotAB = 1.0;
+	if (dotAB < -1.0) dotAB = -1.0;
 	double deltaAz = std::acos(dot(a, b));
 	if (b.x < a.x)
 		deltaAz *= -1.0;
 	
 	a = constrainToAxis(pt0, 0);
 	b = constrainToAxis(pt1, 0);
+	dotAB = dot(a, b);
+	if (dotAB > 1.0) dotAB = 1.0;
+	if (dotAB < -1.0) dotAB = -1.0;
 	double deltaEl = std::acos(dot(a, b));
 	if (b.y < a.y)
 		deltaEl *= -1.0;
@@ -201,7 +209,10 @@ vec3d CameraAzimuthElevation::constrainToAxis(vec3d pt, int axis) const
 	if (dot(pt, pt) <= 0.00001)
 	{
 		// FIXME: vector is nearly zero, what should we do?!
-		return vec3d(0.0, 0.0, 0.0);
+		if (axis == 2)
+			return vec3d(0.0, 1.0, 0.0);
+		else
+			return vec3d(0.0, 0.0, 1.0);
 	}
 	else
 		return normalize(pt);
@@ -212,6 +223,7 @@ vec3d CameraAzimuthElevation::screenToSphere(const vec2i &screenCentre, double s
 	pos -= screenCentre;
 	pos.y *= -1;
 
+	assert(screenRadius > 0.0);
 	vec3d v(pos.x / screenRadius, pos.y / screenRadius, 0.0);
 
 	double r = v.x*v.x + v.y*v.y;
@@ -225,6 +237,7 @@ vec3d CameraAzimuthElevation::screenToSphere(const vec2i &screenCentre, double s
 
 vec2i CameraAzimuthElevation::sphereToScreen(const vec2i &screenCentre, const double screenRadius, const vec3d &pt) const
 {
+	assert(screenRadius > 0.0);
 	vec2i pos((int)(pt.x*screenRadius), (int)(pt.y*screenRadius));
 	pos.y *= -1;
 	pos += screenCentre;

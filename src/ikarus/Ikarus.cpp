@@ -206,11 +206,6 @@ int main(int argc, char *argv[])
 			if (skel.targetPos.z > GridWidth/2.0) skel.targetPos.z = GridWidth/2.0;
 			if (skel.targetPos.z < -GridWidth/2.0) skel.targetPos.z = -GridWidth/2.0;
 #endif
-			
-#if 0
-			if (glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED))
-				break;
-#endif
 		}
 	}
 	catch (std::exception &e)
