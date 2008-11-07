@@ -294,10 +294,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\ikarus\IkGui.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\ikarus\IkSolver.h"
 				>
 			</File>
