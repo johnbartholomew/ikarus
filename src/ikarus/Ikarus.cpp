@@ -69,7 +69,7 @@ void initGL()
 	glEndList();
 }
 
-void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, Skeleton &skel)
+void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, Skeleton &skel, Pose &pose)
 {
 	// GUI state
 	static bool showControls = true;
@@ -105,10 +105,10 @@ void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, 
 	int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
 	int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
 
-	SkeletonDisplay("displayP", &camPerspective, &skel, gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
-	SkeletonDisplay("displayX", &camX, &skel).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
-	SkeletonDisplay("displayY", &camY, &skel).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
-	SkeletonDisplay("displayZ", &camZ, &skel).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
+	SkeletonDisplay("displayP", &camPerspective, &skel, &pose, gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
+	SkeletonDisplay("displayX", &camX, &skel, &pose).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
+	SkeletonDisplay("displayY", &camY, &skel, &pose).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
+	SkeletonDisplay("displayZ", &camZ, &skel, &pose).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
 }
 
 #ifdef _WIN32
@@ -131,6 +131,8 @@ int main(int argc, char *argv[])
 		// load the skeleton
 		Skeleton skel;
 		skel.loadFromFile("human.skl");
+
+		Pose pose(skel);
 
 		// load the default font
 		Font font;
@@ -163,7 +165,7 @@ int main(int argc, char *argv[])
 				break;
 
 			glClear(GL_COLOR_BUFFER_BIT);
-			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, skel);
+			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, skel, pose);
 			wnd.flipGL();
 		}
 

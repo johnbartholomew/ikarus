@@ -31,7 +31,11 @@ void SkeletonDisplay::run(OrbGui &gui, OrbLayout &lyt)
 	if (mGridList != 0)
 		glCallList(mGridList);
 	glColor3f(1.0f, 1.0f, 1.0f);
-	mSkeleton->render();
+
+	if (mPose)
+		mPose->render();
+	else if (mSkeleton)
+		mSkeleton->render();
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
