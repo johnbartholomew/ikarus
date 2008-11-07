@@ -69,7 +69,7 @@ void initGL()
 	glEndList();
 }
 
-void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, const Skeleton &skel, const Pose &pose)
+void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, const IkSolver &solver)
 {
 	// GUI state
 	vec2i wndSize = gui.input->getWindowSize();
@@ -95,10 +95,10 @@ void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, 
 	int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
 	int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
 
-	SkeletonDisplay("displayP", &camPerspective, &skel, &pose, gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
-	SkeletonDisplay("displayX", &camX, &skel, &pose).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
-	SkeletonDisplay("displayY", &camY, &skel, &pose).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
-	SkeletonDisplay("displayZ", &camZ, &skel, &pose).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
+	SkeletonDisplay("displayP", &camPerspective, &solver, gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
+	SkeletonDisplay("displayX", &camX, &solver).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
+	SkeletonDisplay("displayY", &camY, &solver).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
+	SkeletonDisplay("displayZ", &camZ, &solver).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
 }
 
 #ifdef _WIN32
@@ -124,11 +124,12 @@ int main(int argc, char *argv[])
 
 		Pose pose(skel);
 
+		vec3d targetPos(-4.5, 7.0, 1.0);
+
 		IkSolverCCD solver;
 		solver.setPose(pose);
 		solver.setRoot(skel.getDefaultRoot());
 		solver.setEffector(skel.getBone(19)); // the right hand
-		solver.setTargetPos(vec3d(-4.5, 7.0, 1.0)); // up and to the right a bit...
 
 		// load the default font
 		Font font;
@@ -160,9 +161,36 @@ int main(int argc, char *argv[])
 			if (wnd.input.wasKeyPressed(KeyCode::Escape))
 				break;
 
+			vec3d delta(0.0, 0.0, 0.0);
+			if (wnd.input.isKeyDown('W'))
+				delta.z -= 1.0;
+			if (wnd.input.isKeyDown('S'))
+				delta.z += 1.0;
+			if (wnd.input.isKeyDown('A'))
+				delta.x -= 1.0;
+			if (wnd.input.isKeyDown('D'))
+				delta.x += 1.0;
+			if (wnd.input.isKeyDown('Q'))
+				delta.y += 1.0;
+			if (wnd.input.isKeyDown('Z'))
+				delta.y -= 1.0;
+
+			if (delta.x != 0.0 || delta.y != 0.0 || delta.z != 0.0)
+				targetPos += normalize(delta) * MoveStep;
+
+			if (targetPos.x > GridWidth/2.0) targetPos.x = GridWidth/2.0;
+			if (targetPos.x < -GridWidth/2.0) targetPos.x = -GridWidth/2.0;
+
+			if (targetPos.y > GridWidth/2.0) targetPos.y = GridWidth/2.0;
+			if (targetPos.y < 0.0) targetPos.y = 0.0;
+			
+			if (targetPos.z > GridWidth/2.0) targetPos.z = GridWidth/2.0;
+			if (targetPos.z < -GridWidth/2.0) targetPos.z = -GridWidth/2.0;
+
 			glClear(GL_COLOR_BUFFER_BIT);
+			solver.setTargetPos(targetPos);
 			solver.iterateIk();
-			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, skel, solver.getCurrentPose());
+			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, solver);
 			wnd.flipGL();
 		}
 
@@ -181,34 +209,6 @@ int main(int argc, char *argv[])
 				cam = &cameraX;
 			if (glfwGetKey(GLFW_KEY_KP_5))
 				cam = &cameraPerspective;
-
-			vec3d delta(0.0, 0.0, 0.0);
-			if (glfwGetKey('W'))
-				delta.z -= 1.0;
-			if (glfwGetKey('S'))
-				delta.z += 1.0;
-			if (glfwGetKey('A'))
-				delta.x -= 1.0;
-			if (glfwGetKey('D'))
-				delta.x += 1.0;
-			if (glfwGetKey('Q'))
-				delta.y += 1.0;
-			if (glfwGetKey('Z'))
-				delta.y -= 1.0;
-#endif
-
-#if 0
-			if (delta.x != 0.0 || delta.y != 0.0 || delta.z != 0.0)
-				skel.targetPos += normalize(delta) * MoveStep;
-
-			if (skel.targetPos.x > GridWidth/2.0) skel.targetPos.x = GridWidth/2.0;
-			if (skel.targetPos.x < -GridWidth/2.0) skel.targetPos.x = -GridWidth/2.0;
-
-			if (skel.targetPos.y > GridWidth/2.0) skel.targetPos.y = GridWidth/2.0;
-			if (skel.targetPos.y < 0.0) skel.targetPos.y = 0.0;
-			
-			if (skel.targetPos.z > GridWidth/2.0) skel.targetPos.z = GridWidth/2.0;
-			if (skel.targetPos.z < -GridWidth/2.0) skel.targetPos.z = -GridWidth/2.0;
 #endif
 		}
 	}
