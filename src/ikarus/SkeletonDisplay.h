@@ -8,17 +8,50 @@ class Skeleton;
 class Pose;
 class IkSolver;
 
-class SkeletonDisplay : public OrbWidget
+class ThreeDDisplay : public OrbWidget
 {
 public:
-	SkeletonDisplay(const WidgetID &wid, Camera *camera, const IkSolver *solver, GLuint gridList = 0)
-		: OrbWidget(wid), mCamera(camera), mSolver(solver), mGridList(gridList) {}
+	ThreeDDisplay(const WidgetID &wid, Camera *camera, GLuint gridList = 0)
+		: OrbWidget(wid), mCamera(camera), mGridList(gridList) {}
 
 	void run(OrbGui &gui, OrbLayout &lyt);
+	virtual void renderScene() const = 0;
 private:
-	const IkSolver *mSolver;
 	Camera *mCamera;
 	GLuint mGridList;
+};
+
+class SkeletonDisplay : public ThreeDDisplay
+{
+public:
+	SkeletonDisplay(const WidgetID &wid, Camera *camera, const Skeleton *skeleton, GLuint gridList = 0)
+		: ThreeDDisplay(wid, camera, gridList), mSkeleton(skeleton) {}
+
+	virtual void renderScene() const;
+private:
+	const Skeleton *mSkeleton;
+};
+
+class PoseDisplay : public ThreeDDisplay
+{
+public:
+	PoseDisplay(const WidgetID &wid, Camera *camera, const Pose *pose, GLuint gridList = 0)
+		: ThreeDDisplay(wid, camera, gridList), mPose(pose) {}
+
+	virtual void renderScene() const;
+private:
+	const Pose *mPose;
+};
+
+class IkSolverDisplay : public ThreeDDisplay
+{
+public:
+	IkSolverDisplay(const WidgetID &wid, Camera *camera, const IkSolver *solver, GLuint gridList = 0)
+		: ThreeDDisplay(wid, camera, gridList), mSolver(solver) {}
+
+	virtual void renderScene() const;
+private:
+	const IkSolver *mSolver;
 };
 
 #endif

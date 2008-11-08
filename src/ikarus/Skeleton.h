@@ -53,47 +53,40 @@ public:
 
 class Bone;
 
-class Joint
-{
-public:
-	explicit Joint(int id): id(id), a(0), b(0) {}
-
-	const int id;
-	// constraints for the joint
-	JointConstraints constraints;
-	// which bones the joint connects
-	Bone *a;
-	Bone *b;
-};
-
 class Bone
 {
 public:
 	struct Connection
 	{
-		explicit Connection(Joint *j, vec3d v): joint(j), pos(v) {}
+		explicit Connection(Bone *to, vec3d v): to(to), pos(v) {}
 
-		// the joint that this connection goes to
-		Joint *joint;
+		// the bone that this connection goes to
+		Bone *to;
 
 		// position of the joint in bone-space
 		// typically one joint will have a position of 0,0,0, but it's not required
 		vec3d pos;
 	};
 
-	explicit Bone(int id): id(id), effectorPos(0.0, 0.0, 0.0) {}
+	explicit Bone(int id): id(id), displayVec(0.0, 0.0, 0.0), worldPos(0.0, 0.0, 0.0) {}
 
 	const int id;
 	std::string name;
 	std::vector<Connection> joints;
 
-	// expects the matrices to be set up such that vertices are in bone-space
+	// expects the matrices to be set up to put vertices in bone-space
 	void render(const vec3f &col) const;
 
-	// all bones have an associated effector pos which is used to drag them (by IK)
-	// this is like a joint position except it isn't necessarily the connection point
-	// the effectorPos is also used when displaying the bone
-	vec3d effectorPos;
+	// the bone is displayed going from its 0,0,0 point
+	// to the displayVec (in bone-space)
+	// (0,0,0 is usually the position of one of its connections)
+	vec3d displayVec;
+
+	// the default world position of the origin of the bone-space basis
+	vec3d worldPos;
+
+	bool isEffector() const
+	{ return (joints.size() == 1); }
 };
 
 class Skeleton
@@ -102,30 +95,14 @@ public:
 	void loadFromFile(const std::string &fname);
 	void render() const;
 
-	int getNumEffectors() const;
-	int getNumBones() const;
-	int getNumJoints() const;
-
-	Joint &getDefaultRoot()
-	{ return joints[0]; }
-	const Joint &getDefaultRoot() const
-	{ return joints[0]; }
-	const vec3d &getDefaultRootPos() const;
-
-	Joint &getJoint(int idx) { return joints[idx]; }
-	Bone &getBone(int idx) { return bones[idx]; }
-
-	const Joint &getJoint(int idx) const { return joints[idx]; }
-	const Bone &getBone(int idx) const { return bones[idx]; }
+	const Bone &operator[](int idx) const
+	{ return bones[idx]; }
+	Bone &operator[](int idx)
+	{ return bones[idx]; }
 private:
-	refvector<Joint> joints;
 	refvector<Bone> bones;
-	vec3d rootPos;
-	int numEffectors;
-
-	void fixJointPositions(Bone &b, const vec3d &worldPos);
-
-	void renderBone(const Bone &b, const vec3d &base) const;
+	void renderBone(const Bone *from, const Bone &b, const vec3d &base) const;
+	void shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift);
 };
 
 #endif

@@ -3,6 +3,8 @@
 #include "Skeleton.h"
 #include "GfxUtil.h"
 
+#if 0
+
 // ===== Pose ================================================================
 
 Pose::Pose()
@@ -165,3 +167,5 @@ void Pose::renderBone(const Joint *fromJoint, const Bone &b, const mat4d &basis)
 		renderJoint(&b, j, bonespace * vmath::translation_matrix(b.joints[i].pos));
 	}
 }
+
+#endif

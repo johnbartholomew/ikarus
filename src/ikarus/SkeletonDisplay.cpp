@@ -1,11 +1,13 @@
 #include "Global.h"
 #include "SkeletonDisplay.h"
 #include "Camera.h"
+#include "Skeleton.h"
+#include "Pose.h"
 #include "IkSolver.h"
 #include "OrbGui.h"
 #include "OrbInput.h"
 
-void SkeletonDisplay::run(OrbGui &gui, OrbLayout &lyt)
+void ThreeDDisplay::run(OrbGui &gui, OrbLayout &lyt)
 {
 	vec2i wndSize = gui.input->getWindowSize();
 	recti bounds = lyt.place(vec2i(0, 0));
@@ -32,7 +34,7 @@ void SkeletonDisplay::run(OrbGui &gui, OrbLayout &lyt)
 		glCallList(mGridList);
 	glColor3f(1.0f, 1.0f, 1.0f);
 
-	mSolver->render();
+	this->renderScene();
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -58,4 +60,19 @@ void SkeletonDisplay::run(OrbGui &gui, OrbLayout &lyt)
 	glPopMatrix();
 	
 	glDisable(GL_SCISSOR_TEST);
+}
+
+void SkeletonDisplay::renderScene() const
+{
+	mSkeleton->render();
+}
+
+void PoseDisplay::renderScene() const
+{
+	//mPose->render();
+}
+
+void IkSolverDisplay::renderScene() const
+{
+	//mSolver->render();
 }

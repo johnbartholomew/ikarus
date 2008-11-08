@@ -4,6 +4,8 @@
 #include "Skeleton.h"
 #include "GfxUtil.h"
 
+#if 0
+
 // ===== IkSolver ============================================================
 
 void IkSolver::setPose(const Pose &from)
@@ -177,3 +179,5 @@ bool IkSolverCCD::findChainBone(const Joint *fromJoint, const Bone &b, const mat
 
 	return false;
 }
+
+#endif
