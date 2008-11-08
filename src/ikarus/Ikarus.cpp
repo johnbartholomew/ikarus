@@ -8,7 +8,7 @@
 #include "Font.h"
 #include "Skeleton.h"
 //#include "Pose.h"
-//#include "IkSolver.h"
+#include "IkSolver.h"
 
 TextRenderer *gTextRenderer = 0;
 Font *gFont = 0;
@@ -71,7 +71,7 @@ void initGL()
 	glEndList();
 }
 
-void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, const Skeleton &skel)
+void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, const IkSolver &solver)
 {
 	// GUI state
 	vec2i wndSize = gui.input->getWindowSize();
@@ -97,10 +97,10 @@ void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, 
 	int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
 	int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
 
-	SkeletonDisplay("displayP", &camPerspective, &skel, gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
-	SkeletonDisplay("displayX", &camX, &skel).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
-	SkeletonDisplay("displayY", &camY, &skel).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
-	SkeletonDisplay("displayZ", &camZ, &skel).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
+	IkSolverDisplay("displayP", &camPerspective, &solver, gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
+	IkSolverDisplay("displayX", &camX, &solver).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
+	IkSolverDisplay("displayY", &camY, &solver).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
+	IkSolverDisplay("displayZ", &camZ, &solver).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
 }
 
 #ifdef _WIN32
@@ -128,10 +128,7 @@ int main(int argc, char *argv[])
 
 		vec3d targetPos(-4.5, 7.0, 1.0);
 
-		//IkSolverCCD solver;
-		//solver.setPose(pose);
-		//solver.setRoot(skel.getDefaultRoot());
-		//solver.setEffector(skel.getBone(19)); // the right hand
+		IkSolver solver(skel);
 
 		// load the default font
 		Font font;
@@ -190,9 +187,7 @@ int main(int argc, char *argv[])
 			if (targetPos.z < -GridWidth/2.0) targetPos.z = -GridWidth/2.0;
 
 			glClear(GL_COLOR_BUFFER_BIT);
-			//solver.setTargetPos(targetPos);
-			//solver.iterateIk();
-			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, skel);
+			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, solver);
 			wnd.flipGL();
 		}
 

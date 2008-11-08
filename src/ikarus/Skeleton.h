@@ -51,8 +51,6 @@ public:
 	double minTwist, maxTwist;
 };
 
-class Bone;
-
 class Bone
 {
 public:
@@ -73,6 +71,19 @@ public:
 	const int id;
 	std::string name;
 	std::vector<Connection> joints;
+
+	const Connection *findJointWith(const Bone &b) const
+	{
+		for (
+			std::vector<Connection>::const_iterator it = joints.begin();
+			it != joints.end();
+			++it)
+		{
+			if (it->to == &b)
+				return &(*it);
+		}
+		return 0;
+	}
 
 	// expects the matrices to be set up to put vertices in bone-space
 	void render(const vec3f &col) const;
@@ -99,6 +110,9 @@ public:
 	{ return bones[idx]; }
 	Bone &operator[](int idx)
 	{ return bones[idx]; }
+
+	int numBones() const
+	{ return (int)bones.size(); }
 private:
 	refvector<Bone> bones;
 	void renderBone(const Bone *from, const Bone &b, const vec3d &base) const;

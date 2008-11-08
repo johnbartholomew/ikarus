@@ -74,5 +74,5 @@ void PoseDisplay::renderScene() const
 
 void IkSolverDisplay::renderScene() const
 {
-	//mSolver->render();
+	mSolver->render();
 }

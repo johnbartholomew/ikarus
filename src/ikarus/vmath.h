@@ -8,7 +8,7 @@
  *
  *
  *  Changes from Trenki's version:
- *  - Rotation angles are specified in radians rather than degrees
+ *  - All rotation angles are specified in radians rather than degrees
  *    (angles need to work with trig functions easily, and the trig
  *    functions all expect radians - it seems silly to keep converting
  *    between radians and degrees; everything should be in radians
@@ -18,9 +18,8 @@
  *  - Matricies are stored column-major rather than row-major.
  *    This is because I'm using OpenGL and I want to be able to call
  *    glLoadMatrix(mat) without transposing all the time.
- *
- *  - There are a couple of helper functions to wrap OpenGL versions
- *    (glLoadMatrix; glMultMatrix; glVertex)
+ *    (although in fact, it doesn't really matter since
+ *    there is glLoadMatrixTranspose and glMultMatrixTranspose)
  *
  */
 
@@ -484,6 +483,11 @@ struct mat4 {
 		elem[3][1] = col3[1];
 		elem[3][2] = col3[2];
 		elem[3][3] = col3[3];
+	}
+
+	vec3<T> translation() const
+	{
+		return vec3<T>(elem[3][0], elem[3][1], elem[3][2]);
 	}
 
 	MATRIX_CONSTRUCTOR_FROM_LOWER(mat4, mat3, 4, 3)
@@ -993,8 +997,8 @@ inline quat<T> conjugate(const quat<T>& q)
 template <typename T> 
 inline quat<T> inverse(const quat<T>& q)
 {
-	const T l = dot(q, q);
-	if ( l > T(0) ) return conjugate(q) * inv(l);
+	const T lensqrd = dot(q, q);
+	if ( lensqrd > T(0) ) return conjugate(q) * inv(lensqrd);
 	else return identityq<T>();
 }
 

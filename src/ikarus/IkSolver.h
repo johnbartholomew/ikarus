@@ -1,59 +1,72 @@
 #ifndef IK_SOLVER_H
 #define IK_SOLVER_H
 
-#include "Pose.h"
+#include "Skeleton.h"
 
 class Skeleton;
 class Bone;
-class Joint;
 
 class IkSolver
 {
 public:
-	void setPose(const Pose &from);
-	void setRoot(const Joint &root);
-	void setEffector(const Bone &b);
-	void setTargetPos(const vec3d &pos);
+	IkSolver(const Skeleton &skel);
 
-	const Pose &getCurrentPose() const;
+	const vec3d &getTargetPos() const;
+	const Bone &getRootBone() const;
+	const Bone &getEffector() const;
 
-	Pose solveIk(const Pose &from, const Joint &root, const Bone &effector, const vec3d &target, int maxIterations = 20);
+	void setTargetPos(const vec3d &target);
+	void setRootBone(const Bone &bone);
+	void setEffector(const Bone &bone);
 
-	virtual void solveIk(int maxIterations) = 0;
-	virtual void iterateIk() = 0;
+	// resets the root bone, effector and target position
+	void resetAll();
 
+	// resets the pose to be the neutral (skeleton-default) pose
+	void resetPose();
+
+	// render the skeleton, with root, effector and target highlighted
 	void render() const;
-protected:
-	Pose currentPose;
-	vec3d targetPos;
-	const Joint *root;
-	vec3d rootPos;
-	const Bone *effector;
-};
 
-class IkSolverCCD : public IkSolver
-{
-public:
-	virtual void solveIk(int maxIterations);
-	virtual void iterateIk();
+	// try to completely solve for the current target
+	void solveIk(int maxIterations);
+
+	// perform one iteration of whatever IK algorithm is being implemented
+	void iterateIk();
 
 private:
-	struct IkLink
+	struct BoneState
 	{
-		explicit IkLink(const Joint &j, const Bone &b, const vec3d &pos): joint(&j), bone(&b), worldPos(pos) {}
-		const Joint *joint;
-		const Bone *bone;
-		vec3d worldPos; // position of the joint
+		BoneState(): bonespace(1.0), rot(vmath::identityq<double>()) {}
+		BoneState(const vec3d &worldPos)
+			: bonespace(vmath::translation_matrix(worldPos)), rot(vmath::identityq<double>()) {}
+
+		// nominal (relative) state values
+		quatd rot;
+
+		// cached absolute transform
+		mutable mat4d bonespace;
 	};
 
-	std::vector<IkLink> chain;
-	vec3d effectorPos;
+	// an IkSolver is linked at construction with a skeleton
+	// and cannot be switched to a different skeleton
+	const Skeleton &skeleton;
 
-	vec3d ikStep();
+	const Bone *rootBone;
+	const Bone *effectorBone;
+	std::vector<const Bone*> ikChain;
+	std::vector<BoneState> boneStates;
 
-	void findChain();
-	bool findChainBone(const Joint *fromJoint, const Bone &b, const mat4d &basis);
-	bool findChainJoint(const Bone *fromBone, const Joint &j, const mat4d &basis);
+	vec3d targetPos;
+	vec3d rootPos;
+
+	void renderBone(const Bone *parent, const Bone &b) const;
+
+	void updateBoneTransforms() const;
+	void updateBoneTransform(const Bone *parent, const Bone &b, const mat4d &basis) const;
+
+	bool buildChain(const Bone &from, const Bone &to, std::vector<const Bone*> &chain) const;
+	bool buildChain(const Bone *parent, const Bone &b, const Bone &target, std::vector<const Bone*> &chain) const;
 };
 
 
