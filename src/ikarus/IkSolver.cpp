@@ -7,8 +7,17 @@
 
 quatd calcRotation(const vec3d &tip, const vec3d &target)
 {
-	vec3d a = normalize(tip);
-	vec3d b = normalize(target);
+	double lenSqrTip = dot(tip, tip);
+	if (lenSqrTip < 0.001) return vmath::identityq<double>();
+	double lenSqrTarget = dot(target, target);
+	if (lenSqrTarget < 0.001) return vmath::identityq<double>();
+
+	vec3d a = tip * vmath::rsqrt(lenSqrTip);
+	vec3d b = target * vmath::rsqrt(lenSqrTarget);
+
+	// sanity check
+	assert(abs(dot(a,a) - 1.0) < 0.0001);
+	assert(abs(dot(b,b) - 1.0) < 0.0001);
 
 	double dotAB = dot(a, b);
 	double angle;
@@ -18,6 +27,9 @@ quatd calcRotation(const vec3d &tip, const vec3d &target)
 		angle = 0.0;
 	else
 		angle = std::acos(dotAB);
+
+	// sanity check
+	assert(angle >= -M_PI && angle <= M_PI);
 
 	// early-out if the angle is small
 	if (angle < 0.001)
@@ -143,7 +155,7 @@ void IkSolver::iterateIk()
 
 	// need the bone transforms to be valid before the step
 	// because we use them to quickly find the joint position for each bone
-	updateBoneTransforms();
+	//updateBoneTransforms();
 
 	// perform basic CCD
 	stepIk();
@@ -184,25 +196,22 @@ void IkSolver::stepIkBone(const Bone &b, const vec3d &origin, vec3d &tip)
 	vec3d relTip = tip - origin;
 	vec3d relTarget = targetPos - origin;
 
-	if ((abs(dot(relTip,relTip)) < 0.001) ||
-		(abs(dot(relTarget,relTarget)) < 0.001))
-	{
-		// target or root is too close for rotation to be useful;
-		// early-out to avoid crazy numeric stability issues
-		return;
-	}
-
 	// calculate the required rotation
 	quatd rot = calcRotation(relTip, relTarget);
-
-	mat4d rotM = quat_to_mat4(rot);
+	if (rot == vmath::identityq<double>()) return;
 
 	// update the tip location
+	mat4d rotM = quat_to_mat4(rot);
 	tip = origin + transform_vector(rotM, relTip);
 
+	// sanity check
+	const vec3d tmpa = normalize(relTarget);
+	const vec3d tmpb = normalize(tip - origin);
+	assert(dot(tmpa, tmpb) > 0.999);
+
 	// update the bone state
-	//BoneState &bs = boneStates[b.id];
-	//bs.rot = bs.rot * rot;
+	BoneState &bs = boneStates[b.id];
+	bs.rot = bs.rot * rot;
 }
 
 void IkSolver::updateBoneTransforms() const
@@ -215,18 +224,16 @@ void IkSolver::updateBoneTransform(const Bone *parent, const Bone &b, const mat4
 {
 	const BoneState &bs = boneStates[b.id];
 
+	bs.bonespace = basis * quat_to_mat4(bs.rot);
+
 	// basis is an intermediate coordinate frame, with the parent bone's orientation,
 	// but the origin at the location of the joint between b and parent
-	if (parent == 0)
-	{
-		// we're at the root bone
-		bs.bonespace = basis * quat_to_mat4(bs.rot);
-	}
-	else
+	if (parent != 0)
 	{
 		const Bone::Connection *c = b.findJointWith(*parent);
 		assert(c != 0);
-		bs.bonespace = basis * quat_to_mat4(bs.rot) * vmath::translation_matrix(- c->pos);
+		if (abs(dot(c->pos, c->pos) - 1.0) > 0.0001)
+			bs.bonespace = bs.bonespace * vmath::translation_matrix(- c->pos);
 	}
 
 	for (int i = 0; i < (int)b.joints.size(); ++i)
