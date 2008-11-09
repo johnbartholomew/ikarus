@@ -33,7 +33,7 @@ mat4d CameraOrtho::getProjection(const recti &bounds) const
 		0.0, -sy, 0.0,   y,
 		0.0, 0.0, 1.0, 0.0,
 		0.0, 0.0, 0.0, 1.0
-	) * vmath::ortho_matrix(-aspect, aspect, -1.0, 1.0, 0.1, 100.0);
+	) * vmath::ortho_matrix(-aspect, aspect, -1.0, 1.0, -50.0, 50.0);
 }
 
 mat4d CameraOrtho::getModelView() const
