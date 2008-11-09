@@ -3,6 +3,31 @@
 #include "Skeleton.h"
 #include "GfxUtil.h"
 
+// ===== Utilities ===========================================================
+
+quatd calcRotation(const vec3d &tip, const vec3d &target)
+{
+	vec3d a = normalize(tip);
+	vec3d b = normalize(target);
+
+	double dotAB = dot(a, b);
+	double angle;
+	if (dotAB <= -1.0)
+		angle = M_PI;
+	else if (dotAB >= 1.0)
+		angle = 0.0;
+	else
+		angle = std::acos(dotAB);
+
+	// early-out if the angle is small
+	if (angle < 0.001)
+		return vmath::identityq<double>();
+
+	return quat_from_axis_angle(cross(a, b), angle);
+}
+
+// ===== IkSolver ============================================================
+
 IkSolver::IkSolver(const Skeleton &skel)
 :	skeleton(skel),
 	rootBone(0),
@@ -73,8 +98,8 @@ void IkSolver::setRootBone(const Bone &bone)
 
 void IkSolver::setEffector(const Bone &bone)
 {
-	// not yet implemented
-	assert(0);
+	effectorBone = &bone;
+	ikChain.clear();
 }
 
 void IkSolver::render() const
@@ -113,8 +138,71 @@ void IkSolver::solveIk(int maxIterations)
 
 void IkSolver::iterateIk()
 {
-	// not yet implemented
-	assert(0);
+	if (ikChain.size() == 0)
+		buildChain(*rootBone, *effectorBone, ikChain);
+
+	// need the bone transforms to be valid before the step
+	// because we use them to quickly find the joint position for each bone
+	updateBoneTransforms();
+
+	// perform basic CCD
+	stepIk();
+
+	// need the bone transforms to be valid again afterwards for consistency
+	updateBoneTransforms();
+}
+
+vec3d IkSolver::stepIk()
+{
+	vec3d tip = boneStates[effectorBone->id].bonespace.translation();
+
+	std::vector<const Bone*>::iterator it = ikChain.begin();
+	// the first bone is the effector bone, so rotating it won't help; just skip it
+	++it;
+	while (it != ikChain.end())
+	{
+		const Bone &b = **it;
+		BoneState &bs = boneStates[b.id];
+
+		++it;
+		if (it != ikChain.end())
+		{
+			const Bone &parent = **it;
+			vec3d jointPos = b.findJointWith(parent)->pos;
+			vec3d origin = transform_point(bs.bonespace, jointPos);
+			stepIkBone(b, origin, tip);
+		}
+
+		break;
+	}
+
+	return tip;
+}
+
+void IkSolver::stepIkBone(const Bone &b, const vec3d &origin, vec3d &tip)
+{
+	vec3d relTip = tip - origin;
+	vec3d relTarget = targetPos - origin;
+
+	if ((abs(dot(relTip,relTip)) < 0.001) ||
+		(abs(dot(relTarget,relTarget)) < 0.001))
+	{
+		// target or root is too close for rotation to be useful;
+		// early-out to avoid crazy numeric stability issues
+		return;
+	}
+
+	// calculate the required rotation
+	quatd rot = calcRotation(relTip, relTarget);
+
+	mat4d rotM = quat_to_mat4(rot);
+
+	// update the tip location
+	tip = origin + transform_vector(rotM, relTip);
+
+	// update the bone state
+	//BoneState &bs = boneStates[b.id];
+	//bs.rot = bs.rot * rot;
 }
 
 void IkSolver::updateBoneTransforms() const
@@ -153,18 +241,15 @@ void IkSolver::updateBoneTransform(const Bone *parent, const Bone &b, const mat4
 bool IkSolver::buildChain(const Bone &from, const Bone &to, std::vector<const Bone*> &chain) const
 {
 	assert(chain.size() == 0);
-	bool found = buildChain(0, from, to, chain);
-	if (found) std::reverse(chain.begin(), chain.end());
-	return found;
+	return buildChain(0, from, to, chain);
 }
 
 bool IkSolver::buildChain(const Bone *parent, const Bone &b, const Bone &target, std::vector<const Bone*> &chain) const
 {
+	bool found = false;
+
 	if (&b == &target)
-	{
-		chain.push_back(&b);
-		return true;
-	}
+		found = true;
 	else
 	{
 		for (int i = 0; i < (int)b.joints.size(); ++i)
@@ -173,9 +258,17 @@ bool IkSolver::buildChain(const Bone *parent, const Bone &b, const Bone &target,
 			if (&bn != parent)
 			{
 				if (buildChain(&b, bn, target, chain))
-					return true;
+				{
+					found = true;
+					break;
+				}
 			}
 		}
-		return false;
+		
 	}
+
+	if (found)
+		chain.push_back(&b);
+
+	return found;
 }

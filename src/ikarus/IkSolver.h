@@ -61,6 +61,9 @@ private:
 	vec3d rootPos;
 
 	void renderBone(const Bone *parent, const Bone &b) const;
+	
+	vec3d stepIk();
+	void stepIkBone(const Bone &b, const vec3d &origin, vec3d &tip);
 
 	void updateBoneTransforms() const;
 	void updateBoneTransform(const Bone *parent, const Bone &b, const mat4d &basis) const;

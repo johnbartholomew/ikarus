@@ -126,9 +126,10 @@ int main(int argc, char *argv[])
 
 		//Pose pose(skel);
 
-		vec3d targetPos(-4.5, 7.0, 1.0);
-
 		IkSolver solver(skel);
+		
+		vec3d targetPos(-4.5, 7.0, 1.0);
+		//solver.setEffector(skel[19]);
 
 		// load the default font
 		Font font;
@@ -148,6 +149,8 @@ int main(int argc, char *argv[])
 
 		// pick the default camera
 		Camera *cam = &cameraPerspective;
+
+		double targetSpeed = 0.0;
 
 		wnd.input.beginFrame();
 		while (true)
@@ -174,8 +177,17 @@ int main(int argc, char *argv[])
 			if (wnd.input.isKeyDown('Z'))
 				delta.y -= 1.0;
 
-			if (delta.x != 0.0 || delta.y != 0.0 || delta.z != 0.0)
-				targetPos += normalize(delta) * MoveStep;
+			if (dot(delta,delta) > 0.0)
+			{
+				targetSpeed += 0.05;
+				if (targetSpeed > MoveStep)
+					targetSpeed = MoveStep;
+			}
+			else
+				targetSpeed = 0.0;
+
+			if (targetSpeed > 0.0)
+				targetPos += normalize(delta) * targetSpeed;
 
 			if (targetPos.x > GridWidth/2.0) targetPos.x = GridWidth/2.0;
 			if (targetPos.x < -GridWidth/2.0) targetPos.x = -GridWidth/2.0;
@@ -187,6 +199,8 @@ int main(int argc, char *argv[])
 			if (targetPos.z < -GridWidth/2.0) targetPos.z = -GridWidth/2.0;
 
 			glClear(GL_COLOR_BUFFER_BIT);
+			solver.setTargetPos(targetPos);
+			solver.iterateIk();
 			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, solver);
 			wnd.flipGL();
 		}
