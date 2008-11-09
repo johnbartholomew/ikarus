@@ -181,20 +181,36 @@ vec3d IkSolver::stepIk()
 		{
 			const Bone &parent = **it;
 			vec3d jointPos = b.findJointWith(parent)->pos;
-			vec3d origin = transform_point(bs.bonespace, jointPos);
-			stepIkBone(b, origin, tip);
-		}
 
-		break;
+			// the calculations are performed in bone space
+			// (otherwise the rotation produced will be wrong)
+			// luckily, the bonespace matrix is just a rigid body
+			// transform (ie, rotation and translation only)
+			// so it's relatively fast to work out its inverse
+			// (just a few dot products and some transposition)
+			// so, we work out the bonespace inverse
+			// transform the accumulated tip position and the target position into bonespace
+			// update the joint
+			// then transform the new tip position back into world space
+
+			mat4d invBonespace = vmath::fast_inverse(bs.bonespace);
+
+			vec3d tipB = transform_point(invBonespace, tip);
+			vec3d targetB = transform_point(invBonespace, targetPos);
+
+			updateJointByIk(b, jointPos, targetB, tipB);
+
+			tip = transform_point(bs.bonespace, tipB);
+		}
 	}
 
 	return tip;
 }
 
-void IkSolver::stepIkBone(const Bone &b, const vec3d &origin, vec3d &tip)
+void IkSolver::updateJointByIk(const Bone &b, const vec3d &jointPos, const vec3d &target, vec3d &tip)
 {
-	vec3d relTip = tip - origin;
-	vec3d relTarget = targetPos - origin;
+	vec3d relTip = tip - jointPos;
+	vec3d relTarget = target - jointPos;
 
 	// calculate the required rotation
 	quatd rot = calcRotation(relTip, relTarget);
@@ -202,11 +218,11 @@ void IkSolver::stepIkBone(const Bone &b, const vec3d &origin, vec3d &tip)
 
 	// update the tip location
 	mat4d rotM = quat_to_mat4(rot);
-	tip = origin + transform_vector(rotM, relTip);
+	tip = jointPos + transform_vector(rotM, relTip);
 
 	// sanity check
 	const vec3d tmpa = normalize(relTarget);
-	const vec3d tmpb = normalize(tip - origin);
+	const vec3d tmpb = normalize(tip - jointPos);
 	assert(dot(tmpa, tmpb) > 0.999);
 
 	// update the bone state
