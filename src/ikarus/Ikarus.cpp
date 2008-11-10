@@ -71,37 +71,106 @@ void initGL()
 	glEndList();
 }
 
-void renderGui(OrbGui &gui, Camera &camPerspective, Camera &camX, Camera &camY, Camera &camZ, const IkSolver &solver)
+class Ikarus
 {
-	// GUI state
-	vec2i wndSize = gui.input->getWindowSize();
-
-	// set up the default projection & modelview matrices
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0.0, (double)wndSize.x, (double)wndSize.y, 0.0, 1.0, -1.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	
-	ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
-
-	Label("title", "Ikarus").run(gui, lyt);
-	if (Button("next-root-btn", "Next Root").run(gui, lyt) ||
-		gui.input->wasKeyPressed(KeyCode::N))
+public:
+	Ikarus()
+	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), targetPos(0.0, 0.0, 0.0)
 	{
-		// switch to the next root
+		skel.loadFromFile("human.skl");
+		solver.reset(new IkSolver(skel));
+
+		targetPos = solver->getTargetPos();
 	}
 
-	int leftRightSplit = 250;
-	int topBottomSplit = wndSize.y - 200;
-	int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
-	int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
+	void run(OrbGui &gui)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		updateTargetPos(gui);
+		solver->iterateIk();
+		runGui(gui);
+	}
 
-	IkSolverDisplay("displayP", &camPerspective, &solver, gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
-	IkSolverDisplay("displayX", &camX, &solver).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
-	IkSolverDisplay("displayY", &camY, &solver).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
-	IkSolverDisplay("displayZ", &camZ, &solver).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
-}
+	void runGui(OrbGui &gui)
+	{
+		// GUI state
+		vec2i wndSize = gui.input->getWindowSize();
+
+		// set up the default projection & modelview matrices
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0.0, (double)wndSize.x, (double)wndSize.y, 0.0, 1.0, -1.0);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		
+		ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
+
+		Label("title", "Ikarus").run(gui, lyt);
+
+		if (Button("reset-btn", "Reset").run(gui, lyt))
+		{
+			solver->resetAll();
+			targetPos = solver->getTargetPos();
+			targetSpeed = 0.0;
+		}
+
+		int leftRightSplit = 250;
+		int topBottomSplit = wndSize.y - 200;
+		int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
+		int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
+
+		IkSolverDisplay("displayP", &camPerspective, solver.get(), gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
+		IkSolverDisplay("displayX", &camX, solver.get()).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
+		IkSolverDisplay("displayY", &camY, solver.get()).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
+		IkSolverDisplay("displayZ", &camZ, solver.get()).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
+	}
+
+	void updateTargetPos(OrbGui &gui)
+	{
+		// update the target pos...
+		vec3d delta(0.0, 0.0, 0.0);
+		if (gui.input->isKeyDown('W')) delta.z -= 1.0;
+		if (gui.input->isKeyDown('S')) delta.z += 1.0;
+		if (gui.input->isKeyDown('A')) delta.x -= 1.0;
+		if (gui.input->isKeyDown('D')) delta.x += 1.0;
+		if (gui.input->isKeyDown('Q')) delta.y += 1.0;
+		if (gui.input->isKeyDown('Z')) delta.y -= 1.0;
+
+		if (dot(delta,delta) > 0.0)
+		{
+			targetSpeed += 0.05;
+			if (targetSpeed > MoveStep)
+				targetSpeed = MoveStep;
+		}
+		else
+			targetSpeed = 0.0;
+
+		if (targetSpeed > 0.0)
+			targetPos += normalize(delta) * targetSpeed;
+
+		if (targetPos.x > GridWidth/2.0) targetPos.x = GridWidth/2.0;
+		if (targetPos.x < -GridWidth/2.0) targetPos.x = -GridWidth/2.0;
+
+		if (targetPos.y > GridWidth/2.0) targetPos.y = GridWidth/2.0;
+		if (targetPos.y < 0.0) targetPos.y = 0.0;
+		
+		if (targetPos.z > GridWidth/2.0) targetPos.z = GridWidth/2.0;
+		if (targetPos.z < -GridWidth/2.0) targetPos.z = -GridWidth/2.0;
+
+		solver->setTargetPos(targetPos);
+	}
+
+private:
+	CameraAzimuthElevation camPerspective;
+	CameraOrtho camX;
+	CameraOrtho camY;
+	CameraOrtho camZ;
+	Skeleton skel;
+
+	ScopedPtr<IkSolver> solver;
+	double targetSpeed;
+	vec3d targetPos;
+};
 
 #ifdef _WIN32
 int APIENTRY wWinMain(HINSTANCE hPrevInstance, HINSTANCE hInstance, LPWSTR cmdLine, int nShowCmd)
@@ -120,17 +189,6 @@ int main(int argc, char *argv[])
 		glewInit();
 		initGL();
 
-		// load the skeleton
-		Skeleton skel;
-		skel.loadFromFile("human.skl");
-
-		//Pose pose(skel);
-
-		IkSolver solver(skel);
-		
-		vec3d targetPos(-4.5, 7.0, 1.0);
-		//solver.setEffector(skel[19]);
-
 		// load the default font
 		Font font;
 		//font.loadFromFile("arial-rounded-18.fnt");
@@ -140,17 +198,7 @@ int main(int argc, char *argv[])
 		gTextRenderer = &textRenderer;
 		
 		OrbGui gui(&wnd.input, gFont, gTextRenderer);
-
-		// set up the cameras
-		CameraAzimuthElevation cameraPerspective;
-		CameraOrtho cameraX(0);
-		CameraOrtho cameraY(1);
-		CameraOrtho cameraZ(2);
-
-		// pick the default camera
-		Camera *cam = &cameraPerspective;
-
-		double targetSpeed = 0.0;
+		Ikarus ikarus;
 
 		wnd.input.beginFrame();
 		while (true)
@@ -163,45 +211,8 @@ int main(int argc, char *argv[])
 			if (wnd.input.wasKeyPressed(KeyCode::Escape))
 				break;
 
-			vec3d delta(0.0, 0.0, 0.0);
-			if (wnd.input.isKeyDown('W'))
-				delta.z -= 1.0;
-			if (wnd.input.isKeyDown('S'))
-				delta.z += 1.0;
-			if (wnd.input.isKeyDown('A'))
-				delta.x -= 1.0;
-			if (wnd.input.isKeyDown('D'))
-				delta.x += 1.0;
-			if (wnd.input.isKeyDown('Q'))
-				delta.y += 1.0;
-			if (wnd.input.isKeyDown('Z'))
-				delta.y -= 1.0;
+			ikarus.run(gui);
 
-			if (dot(delta,delta) > 0.0)
-			{
-				targetSpeed += 0.05;
-				if (targetSpeed > MoveStep)
-					targetSpeed = MoveStep;
-			}
-			else
-				targetSpeed = 0.0;
-
-			if (targetSpeed > 0.0)
-				targetPos += normalize(delta) * targetSpeed;
-
-			if (targetPos.x > GridWidth/2.0) targetPos.x = GridWidth/2.0;
-			if (targetPos.x < -GridWidth/2.0) targetPos.x = -GridWidth/2.0;
-
-			if (targetPos.y > GridWidth/2.0) targetPos.y = GridWidth/2.0;
-			if (targetPos.y < 0.0) targetPos.y = 0.0;
-			
-			if (targetPos.z > GridWidth/2.0) targetPos.z = GridWidth/2.0;
-			if (targetPos.z < -GridWidth/2.0) targetPos.z = -GridWidth/2.0;
-
-			glClear(GL_COLOR_BUFFER_BIT);
-			solver.setTargetPos(targetPos);
-			solver.iterateIk();
-			renderGui(gui, cameraPerspective, cameraX, cameraY, cameraZ, solver);
 			wnd.flipGL();
 		}
 
