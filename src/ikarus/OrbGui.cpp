@@ -418,7 +418,10 @@ void ComboBox::add(const WidgetID &itemID, const std::string &item)
 
 WidgetID ComboBox::run(OrbGui &gui, OrbLayout &lyt)
 {
-	const Entry *e = findEntry(mSelected);
+	const Entry *curItem = 0;
+	int curItemIdx = 0;
+	const Entry *e = findEntry(mSelected, &curItemIdx);
+	curItem = e;
 
 	vec2f szf;
 	if (e == 0)
@@ -430,13 +433,11 @@ WidgetID ComboBox::run(OrbGui &gui, OrbLayout &lyt)
 	sz.x += sz.y; // square button
 	recti bounds = lyt.place(sz);
 
-	vec3f bgCol, buttonCol, textCol;
+	vec3f bgCol, buttonCol, selCol, textCol;
 
 	bool isHot = false, isActive = false;
 	std::string itemListText;
 	recti listBounds;
-	const Entry *curItem = 0;
-	int curItemIdx = 0;
 
 	if (mEnabled)
 	{
@@ -445,17 +446,23 @@ WidgetID ComboBox::run(OrbGui &gui, OrbLayout &lyt)
 		
 		isActive = (gui.getActive() == wid);
 
-		if (isInsideBox && !isActive)
-			gui.requestHot(wid);
-		else
-			gui.releaseHot(wid);
+		if (!isActive)
+		{
+			if (isInsideBox)
+				gui.requestHot(wid);
+			else
+				gui.releaseHot(wid);
+		}
 
 		isHot = (gui.getHot() == wid);
 
-		if (isActive)
-			buttonCol = vec3f(0.3f, 0.7f, 0.3f);
-		else if (isHot)
-			buttonCol = vec3f(0.3f, 0.3f, 0.7f);
+		if (isHot)
+		{
+			if (isActive && isInsideBox)
+				buttonCol = vec3f(0.3f, 0.7f, 0.3f);
+			else
+				buttonCol = vec3f(0.3f, 0.3f, 0.7f);
+		}
 		else
 			buttonCol = vec3f(0.3f, 0.3f, 0.3f);
 
@@ -477,7 +484,10 @@ WidgetID ComboBox::run(OrbGui &gui, OrbLayout &lyt)
 				if (curItemIdx < 0) curItemIdx = 0;
 				if (curItemIdx >= (int)mEntries.size()) curItemIdx = (int)mEntries.size() - 1;
 				curItem = &mEntries[curItemIdx];
+				selCol = vec3f(0.3f, 0.7f, 0.3f);
 			}
+			else
+				selCol = vec3f(0.3f, 0.3f, 0.7f);
 
 			if (gui.input->wasMouseReleased(MouseButton::Left))
 			{
@@ -519,7 +529,7 @@ WidgetID ComboBox::run(OrbGui &gui, OrbLayout &lyt)
 		vec2i selA(listBounds.topLeft.x, listBounds.topLeft.y + 2 + itemHeight*curItemIdx);
 		vec2i selB(listBounds.topLeft.x + listBounds.size.x, selA.y + itemHeight);
 
-		glColor3fv(buttonCol);
+		glColor3fv(selCol);
 		glBegin(GL_QUADS);
 		glVertex3i(selA.x+1, selA.y, -2);
 		glVertex3i(selB.x-1, selA.y, -2);
@@ -641,14 +651,20 @@ void ComboBox::buildItemListText(std::string &text) const
 	text = ss.str();
 }
 
-const ComboBox::Entry *ComboBox::findEntry(const WidgetID &id) const
+const ComboBox::Entry *ComboBox::findEntry(const WidgetID &id, int *idx) const
 {
+	int i = 0;
 	std::vector<Entry>::const_iterator it = mEntries.begin();
 	while (it != mEntries.end())
 	{
 		if (it->entryID == id)
+		{
+			if (idx != 0)
+				*idx = i;
 			return &(*it);
+		}
 		++it;
+		++i;
 	}
 	return 0;
 }

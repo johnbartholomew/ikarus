@@ -220,7 +220,7 @@ private:
 	void boxPointsRight(const vec2i &a, const vec2i &b, int splitX, int cornerRadius, bool opened) const;
 	void renderItemListBox(const vec3f &bgCol, const vec3f &textCol, const recti &bounds, int cornerRadius) const;
 	void buildItemListText(std::string &text) const;
-	const Entry *findEntry(const WidgetID &id) const;
+	const Entry *findEntry(const WidgetID &id, int *idx = 0) const;
 };
 
 #endif
