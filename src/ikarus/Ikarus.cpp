@@ -78,23 +78,25 @@ class Ikarus
 {
 public:
 	Ikarus()
-	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), targetPos(0.0, 0.0, 0.0), curSkel(0)
+	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), curSkel(0)
 	{
-		skel.loadFromFile("simple.skl");
-		solver.reset(new IkSolver(skel));
-
-		targetPos = solver->getTargetPos();
+		skeletons.push_back(new SkeletonItem("simple.skl", "Simple"));
+		skeletons.push_back(new SkeletonItem("human.skl", "Human"));
 	}
 
 	void run(OrbGui &gui)
 	{
+		SkeletonItem &skel = skeletons[curSkel];
+
 		updateTargetPos(gui);
-		solver->iterateIk();
+		skel.solver->iterateIk();
 		runGui(gui);
 	}
 
 	void runGui(OrbGui &gui)
 	{
+		SkeletonItem &oldSkel = skeletons[curSkel];
+
 		// GUI state
 		vec2i wndSize = gui.input->getWindowSize();
 
@@ -108,36 +110,45 @@ public:
 		ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
 
 		Label("title", "Ikarus").run(gui, lyt);
-		Label("skeleton-lbl", "simple.skl").run(gui, lyt);
 
 		Spacer(vec2i(0, 10)).run(gui, lyt);
 
-		if (Button("reset-btn", "Reset").run(gui, lyt))
+		if (Button("reset-btn", "Reset Pose").run(gui, lyt))
 		{
-			solver->resetAll();
-			targetPos = solver->getTargetPos();
+			oldSkel.solver->resetPose();
+			oldSkel.targetPos = oldSkel.solver->getEffectorPos();
+			targetSpeed = 0.0;
+		}
+
+		if (Button("reset-all-btn", "Reset All").run(gui, lyt))
+		{
+			oldSkel.solver->resetAll();
+			oldSkel.targetPos = oldSkel.solver->getEffectorPos();
 			targetSpeed = 0.0;
 		}
 
 		ComboBox cbox("skeleton-sel", WidgetID(curSkel));
-		cbox.add(WidgetID(0), "Simple");
-		cbox.add(WidgetID(1), "Human");
+		for (int i = 0; i < (int)skeletons.size(); ++i)
+			cbox.add(WidgetID(i), skeletons[i].name);
 		curSkel = cbox.run(gui, lyt).getIndex();
-		Label("xyzzy", "test").run(gui, lyt);
+
+		SkeletonItem &skel = skeletons[curSkel];
 
 		int leftRightSplit = 250;
 		int topBottomSplit = wndSize.y - 200;
 		int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
 		int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
 
-		IkSolverDisplay("displayP", &camPerspective, solver.get(), gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
-		IkSolverDisplay("displayX", &camX, solver.get()).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
-		IkSolverDisplay("displayY", &camY, solver.get()).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
-		IkSolverDisplay("displayZ", &camZ, solver.get()).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
+		IkSolverDisplay("displayP", &camPerspective, skel.solver.get(), gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
+		IkSolverDisplay("displayX", &camX, skel.solver.get()).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
+		IkSolverDisplay("displayY", &camY, skel.solver.get()).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
+		IkSolverDisplay("displayZ", &camZ, skel.solver.get()).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
 	}
 
 	void updateTargetPos(OrbGui &gui)
 	{
+		SkeletonItem &skel = skeletons[curSkel];
+
 		// update the target pos...
 		vec3d delta(0.0, 0.0, 0.0);
 		if (gui.input->isKeyDown('W')) delta.z -= 1.0;
@@ -157,31 +168,46 @@ public:
 			targetSpeed = 0.0;
 
 		if (targetSpeed > 0.0)
-			targetPos += normalize(delta) * targetSpeed;
+			skel.targetPos += normalize(delta) * targetSpeed;
 
-		if (targetPos.x > GridWidth/2.0) targetPos.x = GridWidth/2.0;
-		if (targetPos.x < -GridWidth/2.0) targetPos.x = -GridWidth/2.0;
+		if (skel.targetPos.x > GridWidth/2.0) skel.targetPos.x = GridWidth/2.0;
+		if (skel.targetPos.x < -GridWidth/2.0) skel.targetPos.x = -GridWidth/2.0;
 
-		if (targetPos.y > GridWidth/2.0) targetPos.y = GridWidth/2.0;
-		if (targetPos.y < 0.0) targetPos.y = 0.0;
+		if (skel.targetPos.y > GridWidth/2.0) skel.targetPos.y = GridWidth/2.0;
+		if (skel.targetPos.y < 0.0) skel.targetPos.y = 0.0;
 		
-		if (targetPos.z > GridWidth/2.0) targetPos.z = GridWidth/2.0;
-		if (targetPos.z < -GridWidth/2.0) targetPos.z = -GridWidth/2.0;
+		if (skel.targetPos.z > GridWidth/2.0) skel.targetPos.z = GridWidth/2.0;
+		if (skel.targetPos.z < -GridWidth/2.0) skel.targetPos.z = -GridWidth/2.0;
 
-		solver->setTargetPos(targetPos);
+		skel.solver->setTargetPos(skel.targetPos);
 	}
 
 private:
+	struct SkeletonItem
+	{
+		SkeletonItem(const std::string &fname, const std::string &name)
+			:	name(name)
+		{
+			skeleton.loadFromFile(fname.c_str());
+			solver.reset(new IkSolver(skeleton));
+			targetPos = solver->getTargetPos();
+		}
+
+		Skeleton skeleton;
+		ScopedPtr<IkSolver> solver;
+		vec3d targetPos;
+		std::string name;
+	};
+
 	CameraAzimuthElevation camPerspective;
 	CameraOrtho camX;
 	CameraOrtho camY;
 	CameraOrtho camZ;
-	Skeleton skel;
 
-	ScopedPtr<IkSolver> solver;
 	double targetSpeed;
-	vec3d targetPos;
 	int curSkel;
+
+	refvector<SkeletonItem> skeletons;
 };
 
 #ifdef _WIN32
