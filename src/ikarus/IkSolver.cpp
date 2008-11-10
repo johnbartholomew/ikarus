@@ -44,6 +44,7 @@ IkSolver::IkSolver(const Skeleton &skel)
 :	skeleton(skel),
 	rootBone(0),
 	effectorBone(0),
+	mApplyConstraints(false),
 	targetPos(0.0, 0.0, 0.0),
 	rootPos(0.0, 0.0, 0.0)
 {
@@ -95,6 +96,13 @@ const Bone &IkSolver::getEffector() const
 {
 	assert(effectorBone != 0);
 	return *effectorBone;
+}
+
+vec3d IkSolver::getEffectorPos() const
+{
+	assert(effectorBone != 0);
+	const BoneState &bs = boneStates[effectorBone->id];
+	return bs.bonespace.translation();
 }
 
 void IkSolver::setTargetPos(const vec3d &target)
@@ -153,10 +161,6 @@ void IkSolver::iterateIk()
 	if (ikChain.size() == 0)
 		buildChain(*rootBone, *effectorBone, ikChain);
 
-	// need the bone transforms to be valid before the step
-	// because we use them to quickly find the joint position for each bone
-	//updateBoneTransforms();
-
 	// perform basic CCD
 	stepIk();
 
@@ -180,7 +184,7 @@ vec3d IkSolver::stepIk()
 		if (it != ikChain.end())
 		{
 			const Bone &parent = **it;
-			vec3d jointPos = b.findJointWith(parent)->pos;
+			const Bone::Connection &joint = *b.findJointWith(parent);
 
 			// the calculations are performed in bone space
 			// (otherwise the rotation produced will be wrong)
@@ -198,7 +202,7 @@ vec3d IkSolver::stepIk()
 			vec3d tipB = transform_point(invBonespace, tip);
 			vec3d targetB = transform_point(invBonespace, targetPos);
 
-			updateJointByIk(b, jointPos, targetB, tipB);
+			updateJointByIk(b, joint, targetB, tipB);
 
 			tip = transform_point(bs.bonespace, tipB);
 		}
@@ -207,14 +211,17 @@ vec3d IkSolver::stepIk()
 	return tip;
 }
 
-void IkSolver::updateJointByIk(const Bone &b, const vec3d &jointPos, const vec3d &target, vec3d &tip)
+void IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, vec3d &tip)
 {
+	vec3d jointPos = joint.pos;
 	vec3d relTip = tip - jointPos;
 	vec3d relTarget = target - jointPos;
 
 	// calculate the required rotation
 	quatd rot = calcRotation(relTip, relTarget);
 	if (rot == vmath::identityq<double>()) return;
+	if (mApplyConstraints)
+		rot = applyConstraints(b, joint, rot);
 
 	// update the tip location
 	mat4d rotM = quat_to_mat4(rot);
@@ -228,6 +235,11 @@ void IkSolver::updateJointByIk(const Bone &b, const vec3d &jointPos, const vec3d
 	// update the bone state
 	BoneState &bs = boneStates[b.id];
 	bs.rot = bs.rot * rot;
+}
+
+quatd IkSolver::applyConstraints(const Bone &b, const Bone::Connection &joint, const quatd &rot)
+{
+	return rot;
 }
 
 void IkSolver::updateBoneTransforms() const
@@ -294,4 +306,15 @@ bool IkSolver::buildChain(const Bone *parent, const Bone &b, const Bone &target,
 		chain.push_back(&b);
 
 	return found;
+}
+
+bool IkSolver::isAngleInRange(double minA, double maxA, double a) const
+{
+	assert(minA >= -M_PI && minA < M_PI);
+	assert(maxA >= -M_PI && maxA < M_PI);
+	assert(minA <= maxA);
+
+	while (a < -M_PI) a += 2.0*M_PI;
+	while (a >= M_PI) a -= 2.0*M_PI;
+	return (minA <= a) && (a < maxA);
 }

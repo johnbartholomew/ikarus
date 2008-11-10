@@ -9,15 +9,15 @@ class JointConstraints
 public:
 	enum JointType
 	{
-		Null,   // a null joint doesn't allow any rotation
-		Ball,   // a ball and socket joint allows rotation in a hemisphere, with twist
-		Saddle, // a ball and socket joint allows rotation in a hemisphere, but no twist
-		Hinge,  // a hinge joint only allows changes in elevation
-		Pivot   // a pivot joint only allows twist
+		Fixed,  // a fixed joint doesn't allow any rotation
+		Ball,   // a ball and socket joint allows reorientation, with twist
+		Saddle, // a ball and socket joint allows reorientation, but no twist
+		Hinge,  // a hinge joint only allows changes in elevation (eg, knee)
+		Pivot   // a pivot joint only allows twist (eg, neck, sort of...)
 	};
 
 	JointConstraints()
-	:	type(Null),
+	:	type(Fixed),
 		minAzimuth(0.0), maxAzimuth(0.0),
 		minElevation(0.0), maxElevation(0.0),
 		minTwist(0.0), maxTwist(0.0)
@@ -30,7 +30,33 @@ public:
 		minAzimuth(0.0), maxAzimuth(0.0),
 		minElevation(0.0), maxElevation(0.0),
 		minTwist(0.0), maxTwist(0.0)
-	{}
+	{
+		if (type == Ball)
+		{
+			minTwist = minElevation = minAzimuth = -M_PI;
+			maxTwist = maxElevation = maxAzimuth = M_PI;
+		}
+		else if (type == Saddle)
+		{
+			minElevation = minAzimuth = -M_PI;
+			maxElevation = maxAzimuth = M_PI;
+			minTwist = maxTwist = 0.0;
+		}
+		else if (type == Hinge)
+		{
+			minElevation = -M_PI;
+			maxElevation = M_PI;
+			minAzimuth = maxAzimuth = 0.0;
+			minTwist = maxTwist = 0.0;
+		}
+		else if (type == Pivot)
+		{
+			minElevation = maxElevation = 0.0;
+			minAzimuth = maxAzimuth = 0.0;
+			minTwist = -M_PI;
+			maxTwist = M_PI;
+		}
+	}
 
 	JointConstraints(
 		JointType type,
@@ -60,6 +86,14 @@ public:
 
 		// the bone that this connection goes to
 		Bone *to;
+
+		// constraints for this joint
+		// j = B(b - pos)
+		// where j is a position in joint-space, B is the joint basis and b is a position in bone-space
+		// B is a rotation matrix
+		// the joint constraints limit rotation of the bone in joint-space
+		mat3d basis;
+		JointConstraints constraints;
 
 		// position of the joint in bone-space
 		// typically one joint will have a position of 0,0,0, but it's not required
@@ -97,10 +131,10 @@ public:
 	vec3d worldPos;
 
 	bool isEffector() const
-	{ return (joints.size() == 1); }
+	{ return (joints.size() == 1) && (joints[0].pos == vec3d(0.0, 0.0, 0.0)); }
 };
 
-class Skeleton
+class Skeleton : public RefCounted
 {
 public:
 	void loadFromFile(const std::string &fname);

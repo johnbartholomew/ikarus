@@ -91,7 +91,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 		}
 		else if (cmd == "bone")
 		{
-			int parentId, childrenBegin, childrenEnd;
+			int parentId;
 
 			std::auto_ptr<Bone> bptr(new Bone((int)bones.size()));
 			Bone &b = *bptr;
@@ -100,9 +100,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 				>> b.name
 				>> b.worldPos.x >> b.worldPos.y >> b.worldPos.z
 				>> b.displayVec.x >> b.displayVec.y >> b.displayVec.z
-				>> parentId >> childrenBegin >> childrenEnd;
-
-			int numChildren = (childrenEnd - childrenBegin);
+				>> parentId;
 
 			// ignore the root bone itself...
 			if (parentId >= 0)

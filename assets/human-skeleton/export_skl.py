@@ -67,11 +67,11 @@ def processBones(root, scale):
 
 def writeBones(fl, bones):
 	for b in bones:
-		line = 'bone   %-18s   % 8f % 8f % 8f   % 8f % 8f % 8f   % 3d   % 3d % 3d' % (
+		line = 'bone   %-18s   % 8f % 8f % 8f   % 8f % 8f % 8f   % 3d' % (
 					b.name,
 					b.headPos[0], b.headPos[1], b.headPos[2],
 					b.dir[0], b.dir[1], b.dir[2],
-					b.parentId, b.beginChildren, b.endChildren
+					b.parentId
 				)
 		fl.write(line)
 		fl.write('\n')

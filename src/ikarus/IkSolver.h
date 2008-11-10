@@ -6,7 +6,7 @@
 class Skeleton;
 class Bone;
 
-class IkSolver
+class IkSolver : public RefCounted
 {
 public:
 	IkSolver(const Skeleton &skel);
@@ -14,6 +14,7 @@ public:
 	const vec3d &getTargetPos() const;
 	const Bone &getRootBone() const;
 	const Bone &getEffector() const;
+	vec3d getEffectorPos() const;
 
 	void setTargetPos(const vec3d &target);
 	void setRootBone(const Bone &bone);
@@ -57,19 +58,25 @@ private:
 	std::vector<const Bone*> ikChain;
 	std::vector<BoneState> boneStates;
 
+	bool mApplyConstraints;
+
 	vec3d targetPos;
 	vec3d rootPos;
 
 	void renderBone(const Bone *parent, const Bone &b) const;
 	
 	vec3d stepIk();
-	void updateJointByIk(const Bone &b, const vec3d &jointPos, const vec3d &target, vec3d &tip);
+	void updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, vec3d &tip);
+
+	quatd applyConstraints(const Bone &b, const Bone::Connection &joint, const quatd &rot);
 
 	void updateBoneTransforms() const;
 	void updateBoneTransform(const Bone *parent, const Bone &b, const mat4d &basis) const;
 
 	bool buildChain(const Bone &from, const Bone &to, std::vector<const Bone*> &chain) const;
 	bool buildChain(const Bone *parent, const Bone &b, const Bone &target, std::vector<const Bone*> &chain) const;
+
+	bool isAngleInRange(double minA, double maxA, double a) const;
 };
 
 
