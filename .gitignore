@@ -1,0 +1,16 @@
+*.o
+*.a
+*.lib
+*.obj
+*.exe
+*.dll
+*.suo
+*.user
+*.ncb
+*.ilk
+*.pdb
+*.blend1
+Debug/
+Release/
+
+bin/
