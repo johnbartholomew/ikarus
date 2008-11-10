@@ -76,6 +76,19 @@ public:
 	bool isNull() const
 	{ return (*this == NullWID); }
 
+	const std::string &getName() const
+	{ return name; }
+
+	const void *getData() const
+	{ return data; }
+
+	template <typename T>
+	const T *getData() const
+	{ return static_cast<T*>(data); }
+
+	int getIndex() const
+	{ return idx; }
+
 private:
 	void makeHash();
 
