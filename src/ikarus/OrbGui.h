@@ -117,6 +117,17 @@ public:
 	const WidgetID wid;
 };
 
+class Spacer : public OrbWidget
+{
+public:
+	Spacer(const vec2i &size)
+		: OrbWidget(WidgetID::NullWID), mSize(size) {}
+
+	void run(OrbGui &gui, OrbLayout &lyt);
+private:
+	vec2i mSize;
+};
+
 class Label : public OrbWidget
 {
 public:
@@ -192,6 +203,9 @@ public:
 private:
 	struct Entry
 	{
+		explicit Entry(const WidgetID &id, const std::string &text)
+			: entryID(id), text(text) {}
+
 		WidgetID entryID;
 		std::string text;
 	};
@@ -199,6 +213,14 @@ private:
 	WidgetID mSelected;
 	std::vector<Entry> mEntries;
 	bool mEnabled;
+
+	void comboBoxPoints();
+	void renderComboBox(const vec3f &bgCol, const vec3f &buttonCol, const vec3f &borderCol, const recti &bounds, int cornerRadius, bool opened) const;
+	void boxPointsLeft(const vec2i &a, const vec2i &b, int splitX, int cornerRadius, bool opened) const;
+	void boxPointsRight(const vec2i &a, const vec2i &b, int splitX, int cornerRadius, bool opened) const;
+	void renderItemListBox(const vec3f &bgCol, const vec3f &textCol, const recti &bounds, int cornerRadius) const;
+	void buildItemListText(std::string &text) const;
+	const Entry *findEntry(const WidgetID &id) const;
 };
 
 #endif

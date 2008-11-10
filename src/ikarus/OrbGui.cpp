@@ -2,55 +2,14 @@
 #include "OrbGui.h"
 #include "OrbInput.h"
 #include "Font.h"
+#include "GfxUtil.h"
 
 // ===== Helper Functions ====================================================
 
-void boxPoints(const vec2i &a, const vec2i &b, int cornerRadius, bool line)
-{
-	if (line)
-		glBegin(GL_LINE_LOOP);
-	else
-		glBegin(GL_POLYGON);
-
-	if (cornerRadius == 0)
-	{
-		glVertex2i(a.x, a.y);
-		glVertex2i(b.x, a.y);
-		glVertex2i(b.x, b.y);
-		glVertex2i(a.x, b.y);
-		
-	}
-	else
-	{
-		glVertex2i(a.x+cornerRadius, a.y);
-		glVertex2i(b.x-cornerRadius, a.y);
-		glVertex2i(b.x             , a.y+cornerRadius);
-		glVertex2i(b.x             , b.y-cornerRadius);
-		glVertex2i(b.x-cornerRadius, b.y);
-		glVertex2i(a.x+cornerRadius, b.y);
-		glVertex2i(a.x             , b.y-cornerRadius);
-		glVertex2i(a.x             , a.y+cornerRadius);
-	}
-	
-	glEnd();
-}
-
-void renderBox(const vec3f &bgCol, const vec3f &borderCol, const recti &rect, int cornerRadius)
-{
-	vec2i a(rect.topLeft);
-	vec2i b(rect.topLeft + rect.size);
-
-	glDisable(GL_TEXTURE_2D);
-	glColor3fv(bgCol);
-	boxPoints(a, b, cornerRadius, false);
-	glColor3fv(borderCol);
-	boxPoints(a, b, cornerRadius, true);
-}
-
-void renderText(OrbGui &gui, const vec3f &col, const vec2i &pos, const std::string &text)
+void renderText(OrbGui &gui, const vec3f &col, const vec2i &pos, const std::string &text, float depth = 0.0f)
 {
 	glPushMatrix();
-	glTranslatef((float)pos.x, (float)pos.y, 0.0f);
+	glTranslatef((float)pos.x, (float)pos.y, depth);
 	glColor3fv(col);
 	gui.textOut->drawText(gui.font, text);
 	glPopMatrix();
@@ -164,6 +123,13 @@ recti ColumnLayout::place(const vec2i &size)
 //////////////////////////////////////////////////////////////////////////////
 //   WIDGETS                                                                //
 //////////////////////////////////////////////////////////////////////////////
+
+// ===== Spacer ==============================================================
+
+void Spacer::run(OrbGui &gui, OrbLayout &lyt)
+{
+	lyt.place(mSize);
+}
 
 // ===== Label ===============================================================
 
@@ -439,3 +405,250 @@ void Slider::calcGrabPos(double v, const recti &bounds, vec2i &grabPos, recti &g
 }
 
 // ===== ComboBox ============================================================
+
+void ComboBox::add(const std::string &item)
+{
+	add(WidgetID(item), item);
+}
+
+void ComboBox::add(const WidgetID &itemID, const std::string &item)
+{
+	mEntries.push_back(Entry(itemID, item));
+}
+
+WidgetID ComboBox::run(OrbGui &gui, OrbLayout &lyt)
+{
+	const Entry *e = findEntry(mSelected);
+
+	vec2f szf;
+	if (e == 0)
+		szf = vec2f(0.0f, gui.font->getLineHeight());
+	else
+		szf = gui.textOut->measureText(gui.font, e->text);
+	vec2i sz((int)szf.x, (int)szf.y);
+	sz += vec2i(10, 4);
+	sz.x += sz.y; // square button
+	recti bounds = lyt.place(sz);
+
+	vec3f bgCol, buttonCol, textCol;
+
+	bool isHot = false, isActive = false;
+	std::string itemListText;
+	recti listBounds;
+	const Entry *curItem = 0;
+	int curItemIdx = 0;
+
+	if (mEnabled)
+	{
+		const vec2i mousePos = gui.input->getMousePos();
+		bool isInsideBox = bounds.contains(mousePos);
+		
+		isActive = (gui.getActive() == wid);
+
+		if (isInsideBox && !isActive)
+			gui.requestHot(wid);
+		else
+			gui.releaseHot(wid);
+
+		isHot = (gui.getHot() == wid);
+
+		if (isActive)
+			buttonCol = vec3f(0.3f, 0.7f, 0.3f);
+		else if (isHot)
+			buttonCol = vec3f(0.3f, 0.3f, 0.7f);
+		else
+			buttonCol = vec3f(0.3f, 0.3f, 0.3f);
+
+		if (isActive)
+		{
+			buildItemListText(itemListText);
+			
+			const vec2f listSzf(gui.textOut->measureText(gui.font, itemListText));
+			vec2i listSz((int)listSzf.x, (int)listSzf.y);
+			listSz += vec2i(10, 4);
+
+			listBounds.topLeft = vec2i(bounds.topLeft.x, bounds.topLeft.y + bounds.size.y);
+			listBounds.size.x = std::max(bounds.size.x, listSz.x);
+			listBounds.size.y = listSz.y;
+
+			if (listBounds.contains(mousePos))
+			{
+				curItemIdx = (mousePos.y - listBounds.topLeft.y - 2) / (int)gui.font->getLineHeight();
+				if (curItemIdx < 0) curItemIdx = 0;
+				if (curItemIdx >= (int)mEntries.size()) curItemIdx = (int)mEntries.size() - 1;
+				curItem = &mEntries[curItemIdx];
+			}
+
+			if (gui.input->wasMouseReleased(MouseButton::Left))
+			{
+				if (!isInsideBox)
+					gui.clearActive();
+				if (curItem != 0)
+					mSelected = curItem->entryID;
+			}
+		}
+		else
+		{
+			if (gui.input->wasMousePressed(MouseButton::Left) && isHot)
+				gui.setActive(wid);
+		}
+
+		bgCol = vec3f(0.3f, 0.3f, 0.3f);
+		textCol = vec3f(1.0f, 1.0f, 1.0f);
+	}
+	else
+	{
+		buttonCol = vec3f(0.3f, 0.3f, 0.3f);
+		bgCol = vec3f(0.3f, 0.3f, 0.3f);
+		textCol = vec3f(0.7f, 0.7f, 0.7f);
+	}
+	
+	renderComboBox(bgCol, buttonCol, textCol, bounds, 3, isActive);
+	if (e == 0)
+		renderText(gui, textCol, bounds.topLeft + vec2i(5, 2), "");
+	else
+		renderText(gui, textCol, bounds.topLeft + vec2i(5, 2), e->text);
+
+	if (isActive)
+	{
+		glDisable(GL_TEXTURE_2D);
+
+		renderItemListBox(bgCol, textCol, listBounds, 3);
+
+		int itemHeight = (int)gui.font->getLineHeight();
+		vec2i selA(listBounds.topLeft.x, listBounds.topLeft.y + 2 + itemHeight*curItemIdx);
+		vec2i selB(listBounds.topLeft.x + listBounds.size.x, selA.y + itemHeight);
+
+		glColor3fv(buttonCol);
+		glBegin(GL_QUADS);
+		glVertex3i(selA.x+1, selA.y, -2);
+		glVertex3i(selB.x-1, selA.y, -2);
+		glVertex3i(selB.x-1, selB.y, -2);
+		glVertex3i(selA.x+1, selB.y, -2);
+		glEnd();
+
+		renderText(gui, textCol, listBounds.topLeft + vec2i(5, 2), itemListText, -3.0f);
+	}
+
+	return mSelected;
+}
+
+void ComboBox::renderComboBox(const vec3f &bgCol, const vec3f &buttonCol, const vec3f &borderCol, const recti &bounds, int cornerRadius, bool opened) const
+{
+	const vec2i &a(bounds.topLeft);
+	const vec2i &b(bounds.topLeft + bounds.size);
+	const int splitX = b.x - bounds.size.y;
+	
+	glDisable(GL_TEXTURE_2D);
+
+	glColor3fv(bgCol);
+	glBegin(GL_POLYGON);
+	boxPointsLeft(a, b, splitX, cornerRadius, opened);
+	glEnd();
+
+	glColor3fv(buttonCol);
+	glBegin(GL_POLYGON);
+	boxPointsRight(a, b, splitX, cornerRadius, opened);
+	glEnd();
+
+	glColor3fv(borderCol);
+	glBegin(GL_LINE_STRIP);
+	boxPointsLeft(a, b, splitX, cornerRadius, opened);
+	boxPointsRight(a, b, splitX, cornerRadius, opened);
+	glEnd();
+
+	// down arrow
+	const int tx = splitX + bounds.size.y/2;
+	const int ty = a.y + (bounds.size.y - 5)/2;
+	glBegin(GL_POLYGON);
+	glVertex2i(tx - 3, ty);
+	glVertex2i(tx + 3, ty);
+	glVertex2i(  tx  , ty + 6);
+	glEnd();
+}
+
+void ComboBox::boxPointsLeft(const vec2i &a, const vec2i &b, int splitX, int cornerRadius, bool opened) const
+{
+	glVertex2i(splitX, a.y);
+	glVertex2i(a.x + cornerRadius, a.y);
+	glVertex2i(a.x, a.y + cornerRadius);
+	if (opened)
+		glVertex2i(a.x, b.y);
+	else
+	{
+		glVertex2i(a.x, b.y - cornerRadius);
+		glVertex2i(a.x + cornerRadius, b.y);
+	}
+	glVertex2i(splitX, b.y);
+}
+
+void ComboBox::boxPointsRight(const vec2i &a, const vec2i &b, int splitX, int cornerRadius, bool opened) const
+{
+	glVertex2i(splitX, a.y);
+	glVertex2i(b.x - cornerRadius, a.y);
+	glVertex2i(b.x, a.y + cornerRadius);
+	if (opened)
+		glVertex2i(b.x, b.y);
+	else
+	{
+		glVertex2i(b.x, b.y - cornerRadius);
+		glVertex2i(b.x - cornerRadius, b.y);
+	}
+	glVertex2i(splitX, b.y);
+}
+
+void ComboBox::renderItemListBox(const vec3f &bgCol, const vec3f &textCol, const recti &bounds, int cornerRadius) const
+{
+	const vec2i a(bounds.topLeft);
+	const vec2i b(bounds.topLeft + bounds.size);
+
+	glColor3fv(bgCol);
+	glBegin(GL_POLYGON);
+	{
+		glVertex3i(a.x, a.y, -1);
+		glVertex3i(b.x, a.y, -1);
+		glVertex3i(b.x, b.y - cornerRadius, -1);
+		glVertex3i(b.x - cornerRadius, b.y, -1);
+		glVertex3i(a.x + cornerRadius, b.y, -1);
+		glVertex3i(a.x, b.y - cornerRadius, -1);
+	}
+	glEnd();
+	
+	glColor3fv(textCol);
+	glBegin(GL_LINE_LOOP);
+	{
+		glVertex3i(a.x, a.y, -1);
+		glVertex3i(b.x, a.y, -1);
+		glVertex3i(b.x, b.y - cornerRadius, -1);
+		glVertex3i(b.x - cornerRadius, b.y, -1);
+		glVertex3i(a.x + cornerRadius, b.y, -1);
+		glVertex3i(a.x, b.y - cornerRadius, -1);
+	}
+	glEnd();
+}
+
+void ComboBox::buildItemListText(std::string &text) const
+{
+	std::ostringstream ss;
+	std::vector<Entry>::const_iterator it = mEntries.begin();
+	while (it != mEntries.end())
+	{
+		ss << it->text;
+		++it;
+		if (it != mEntries.end())
+			ss << "\n";
+	}
+	text = ss.str();
+}
+
+const ComboBox::Entry *ComboBox::findEntry(const WidgetID &id) const
+{
+	std::vector<Entry>::const_iterator it = mEntries.begin();
+	while (it != mEntries.end())
+	{
+		if (it->entryID == id)
+			return &(*it);
+		++it;
+	}
+	return 0;
+}

@@ -37,3 +37,45 @@ void renderBlob(const vec3f &col, const vec3d &pos)
 	}
 	glEnd();
 }
+
+void boxPoints(const vec2i &a, const vec2i &b, int cornerRadius, bool line)
+{
+	if (line)
+		glBegin(GL_LINE_LOOP);
+	else
+		glBegin(GL_POLYGON);
+
+	if (cornerRadius == 0)
+	{
+		glVertex2i(a.x, a.y);
+		glVertex2i(b.x, a.y);
+		glVertex2i(b.x, b.y);
+		glVertex2i(a.x, b.y);
+		
+	}
+	else
+	{
+		glVertex2i(a.x+cornerRadius, a.y);
+		glVertex2i(b.x-cornerRadius, a.y);
+		glVertex2i(b.x             , a.y+cornerRadius);
+		glVertex2i(b.x             , b.y-cornerRadius);
+		glVertex2i(b.x-cornerRadius, b.y);
+		glVertex2i(a.x+cornerRadius, b.y);
+		glVertex2i(a.x             , b.y-cornerRadius);
+		glVertex2i(a.x             , a.y+cornerRadius);
+	}
+	
+	glEnd();
+}
+
+void renderBox(const vec3f &bgCol, const vec3f &borderCol, const recti &rect, int cornerRadius)
+{
+	vec2i a(rect.topLeft);
+	vec2i b(rect.topLeft + rect.size);
+
+	glDisable(GL_TEXTURE_2D);
+	glColor3fv(bgCol);
+	boxPoints(a, b, cornerRadius, false);
+	glColor3fv(borderCol);
+	boxPoints(a, b, cornerRadius, true);
+}

@@ -62,6 +62,9 @@ void initGL()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -75,9 +78,9 @@ class Ikarus
 {
 public:
 	Ikarus()
-	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), targetPos(0.0, 0.0, 0.0)
+	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), targetPos(0.0, 0.0, 0.0), curSkel(0)
 	{
-		skel.loadFromFile("human.skl");
+		skel.loadFromFile("simple.skl");
 		solver.reset(new IkSolver(skel));
 
 		targetPos = solver->getTargetPos();
@@ -85,7 +88,6 @@ public:
 
 	void run(OrbGui &gui)
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
 		updateTargetPos(gui);
 		solver->iterateIk();
 		runGui(gui);
@@ -99,13 +101,16 @@ public:
 		// set up the default projection & modelview matrices
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(0.0, (double)wndSize.x, (double)wndSize.y, 0.0, 1.0, -1.0);
+		glOrtho(0.0, (double)wndSize.x, (double)wndSize.y, 0.0, 10.0, -10.0);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		
 		ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
 
 		Label("title", "Ikarus").run(gui, lyt);
+		Label("skeleton-lbl", "simple.skl").run(gui, lyt);
+
+		Spacer(vec2i(0, 10)).run(gui, lyt);
 
 		if (Button("reset-btn", "Reset").run(gui, lyt))
 		{
@@ -113,6 +118,12 @@ public:
 			targetPos = solver->getTargetPos();
 			targetSpeed = 0.0;
 		}
+
+		ComboBox cbox("skeleton-sel", WidgetID(curSkel));
+		cbox.add(WidgetID(0), "Simple");
+		cbox.add(WidgetID(1), "Human");
+		curSkel = cbox.run(gui, lyt).getIndex();
+		Label("xyzzy", "test").run(gui, lyt);
 
 		int leftRightSplit = 250;
 		int topBottomSplit = wndSize.y - 200;
@@ -170,6 +181,7 @@ private:
 	ScopedPtr<IkSolver> solver;
 	double targetSpeed;
 	vec3d targetPos;
+	int curSkel;
 };
 
 #ifdef _WIN32
@@ -211,8 +223,8 @@ int main(int argc, char *argv[])
 			if (wnd.input.wasKeyPressed(KeyCode::Escape))
 				break;
 
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			ikarus.run(gui);
-
 			wnd.flipGL();
 		}
 
