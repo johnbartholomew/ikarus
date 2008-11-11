@@ -64,7 +64,7 @@ private:
 	vec3d rootPos;
 
 	void renderBone(const Bone *parent, const Bone &b) const;
-	
+
 	vec3d stepIk();
 	void updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, vec3d &tip);
 

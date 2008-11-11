@@ -127,12 +127,21 @@ public:
 			targetSpeed = 0.0;
 		}
 
-		ComboBox cbox("skeleton-sel", WidgetID(curSkel));
+		ComboBox skelSel("skeleton-sel", WidgetID(curSkel));
 		for (int i = 0; i < (int)skeletons.size(); ++i)
-			cbox.add(WidgetID(i), skeletons[i].name);
-		curSkel = cbox.run(gui, lyt).getIndex();
-
+			skelSel.add(WidgetID(i), skeletons[i].name);
+		curSkel = skelSel.run(gui, lyt).getIndex();
 		SkeletonItem &skel = skeletons[curSkel];
+
+		ComboBox rootSel("root-sel", WidgetID(&skel.solver->getRootBone()));
+		for (int i = 0; i < skel.skeleton.numBones(); ++i)
+		{
+			const Bone &b = skel.skeleton[i];
+			if (! b.isEffector())
+				rootSel.add(WidgetID(&b), b.name);
+		}
+		const Bone *newRootBone = rootSel.run(gui, lyt).getData<const Bone>();
+		skel.solver->setRootBone(*newRootBone);
 
 		int leftRightSplit = 250;
 		int topBottomSplit = wndSize.y - 200;

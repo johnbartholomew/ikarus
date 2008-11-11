@@ -28,7 +28,7 @@ public:
 
 	template<typename T>
 	WidgetID(T *data)
-		: name("__dataonly"), data(static_cast<void*>(data)), idx(0) { makeHash(); }
+		: name("__dataonly"), data(static_cast<const void*>(data)), idx(0) { makeHash(); }
 
 	WidgetID(const std::string &name, int idx)
 		: name(name), data(0), idx(idx) { makeHash(); }
@@ -37,17 +37,17 @@ public:
 
 	template<typename T>
 	WidgetID(const std::string &name, T *data)
-		: name(name), data(static_cast<void*>(data)), idx(0) { makeHash(); }
+		: name(name), data(static_cast<const void*>(data)), idx(0) { makeHash(); }
 	template<typename T>
 	WidgetID(const char *name, T *data)
-		: name(name ? name : ""), data(static_cast<void*>(data)), idx(0) { makeHash(); }
+		: name(name ? name : ""), data(static_cast<const void*>(data)), idx(0) { makeHash(); }
 
 	template<typename T>
 	WidgetID(const std::string &name, T *data, int idx)
-		: name(name), data(static_cast<void*>(data)), idx(0) { makeHash(); }
+		: name(name), data(static_cast<const void*>(data)), idx(0) { makeHash(); }
 	template<typename T>
 	WidgetID(const char *name, T *data, int idx)
-		: name(name ? name : ""), data(static_cast<void*>(data)), idx(0) { makeHash(); }
+		: name(name ? name : ""), data(static_cast<const void*>(data)), idx(0) { makeHash(); }
 
 	WidgetID &operator=(const WidgetID &wid)
 	{

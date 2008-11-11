@@ -169,6 +169,9 @@ void Skeleton::loadFromFile(const std::string &fname)
 			b.joints.push_back(Bone::Connection(&be, b.displayVec));
 		}
 	}
+
+	// initialize the joint spaces
+	initJointMatrices();
 }
 
 void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift)
@@ -179,6 +182,19 @@ void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &s
 		Bone &c = *b.joints[i].to;
 		if (&c != from)
 			shiftBoneWorldPositions(&b, c, shift);
+	}
+}
+
+void Skeleton::initJointMatrices()
+{
+	for (int i = 0; i < (int)bones.size(); ++i)
+	{
+		Bone &b = bones[i];
+		for (int j = 0; j < (int)b.joints.size(); ++j)
+		{
+			Bone::Connection &bj = b.joints[j];
+			Bone &bs = *bj.to;
+		}
 	}
 }
 

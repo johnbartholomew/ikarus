@@ -112,8 +112,42 @@ void IkSolver::setTargetPos(const vec3d &target)
 
 void IkSolver::setRootBone(const Bone &bone)
 {
-	// not yet implemented
-	assert(0);
+	// early out if we're not changing anything
+	if (rootBone == &bone) return;
+
+	// clear the existing IK chain
+	ikChain.clear();
+
+	// form a chain between the old root and the new root
+	std::vector<const Bone*> chain;
+	buildChain(bone, *rootBone, chain);
+
+	// rebuild the rotation values along the chain
+	// this is required because the rotation values are specified relative to the parent bone,
+	// and the parent bone is dependent on which bone is root
+	std::vector<const Bone*>::const_iterator it = chain.begin();
+	quatd orient = vmath::identityq<double>();
+	while (it != chain.end())
+	{
+		const Bone &b = **it;
+		BoneState &bs = boneStates[b.id];
+		
+		orient = orient * bs.rot;
+
+		++it;
+		if (it != chain.end())
+		{
+			const Bone &nb = **it;
+			BoneState &nbs = boneStates[nb.id];
+			bs.rot = inverse(nbs.rot);
+		}
+		else
+			bs.rot = orient;
+	}
+
+	// set the new root, and its correct position
+	rootBone = &bone;
+	rootPos = boneStates[rootBone->id].bonespace.translation();
 }
 
 void IkSolver::setEffector(const Bone &bone)

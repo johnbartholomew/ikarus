@@ -17,10 +17,10 @@ public:
 	};
 
 	JointConstraints()
-	:	type(Fixed),
-		minAzimuth(0.0), maxAzimuth(0.0),
-		minElevation(0.0), maxElevation(0.0),
-		minTwist(0.0), maxTwist(0.0)
+	:	type(Ball),
+		minAzimuth(-M_PI), maxAzimuth(M_PI),
+		minElevation(-M_PI), maxElevation(M_PI),
+		minTwist(-M_PI), maxTwist(M_PI)
 	{}
 
 	JointConstraints(
@@ -82,7 +82,8 @@ class Bone
 public:
 	struct Connection
 	{
-		explicit Connection(Bone *to, vec3d v): to(to), pos(v) {}
+		explicit Connection(Bone *to, vec3d v)
+			: to(to), basis(1.0), constraints(JointConstraints::Ball), pos(v) {}
 
 		// the bone that this connection goes to
 		Bone *to;
@@ -98,6 +99,11 @@ public:
 		// position of the joint in bone-space
 		// typically one joint will have a position of 0,0,0, but it's not required
 		vec3d pos;
+
+		mat4d boneToJoint() const
+		{ return mat4d(basis) * vmath::translation_matrix(-pos); }
+		vec3d boneToJoint(const vec3d &v) const
+		{ return basis * (v - pos); }
 	};
 
 	explicit Bone(int id): id(id), displayVec(0.0, 0.0, 0.0), worldPos(0.0, 0.0, 0.0) {}
@@ -151,6 +157,7 @@ private:
 	refvector<Bone> bones;
 	void renderBone(const Bone *from, const Bone &b, const vec3d &base) const;
 	void shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift);
+	void Skeleton::initJointMatrices();
 };
 
 #endif
