@@ -70,14 +70,18 @@ void Bone::renderJointCoordinates() const
 			{
 				const Bone::Connection &c = joints[i];
 
+				// don't bother with joints going to effectors
+				// effectors can't do anything anyway (they're just points)
+				if (c.to->isEffector()) continue;
+
 				double a = 0.75; // FIXME: shouldn't be constant
 				vec3d ux( a , 0.0, 0.0);
 				vec3d uy(0.0,  a , 0.0);
 				vec3d uz(0.0, 0.0,  a );
 
-				ux = c.pos + c.basis*ux;
-				uy = c.pos + c.basis*uy;
-				uz = c.pos + c.basis*uz;
+				ux = c.pos + c.jointToBone*ux;
+				uy = c.pos + c.jointToBone*uy;
+				uz = c.pos + c.jointToBone*uz;
 
 				glColor3f(1.0f, 0.0f, 0.0f);
 				glVertex3d(c.pos.x, c.pos.y, c.pos.z);
@@ -141,7 +145,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 				>> parentId
 				>> jointType;
 
-			b.primaryJointIdx = 0;
+			b.primaryJointIdx = -1;
 			if (jointType == "fixed")
 				b.constraints = JointConstraints(JointConstraints::Fixed);
 			else if (jointType == "ball")
@@ -161,6 +165,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 				if (parentId > 0)
 				{
 					Bone &bp = bones[parentId - 1];
+					b.primaryJointIdx = 0;
 					b.joints.push_back(Bone::Connection(&bp, vec3d(0.0, 0.0, 0.0)));
 					bp.joints.push_back(Bone::Connection(&b, b.worldPos - bp.worldPos));
 				}
@@ -225,7 +230,17 @@ void Skeleton::loadFromFile(const std::string &fname)
 	}
 
 	// initialize the joint spaces
-	initJointMatrices();
+	for (int i = 0; i < (int)roots.size(); ++i)
+	{
+		Bone &b = *roots[i];
+		if (b.primaryJointIdx >= 0)
+			initJointMatrices(*b.joints[b.primaryJointIdx].to, b);
+		else
+		{
+			for (int j = 0; j < (int)b.joints.size(); ++j)
+				initJointMatrices(b, *b.joints[j].to);
+		}
+	}
 }
 
 void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift)
@@ -239,53 +254,55 @@ void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &s
 	}
 }
 
-void Skeleton::initJointMatrices()
+void Skeleton::initJointMatrices(Bone &parent, Bone &child)
 {
-	for (int i = 0; i < (int)bones.size(); ++i)
+	Bone::Connection &pj = *parent.findJointWith(child);
+	assert(child.primaryJointIdx >= 0);
+	Bone::Connection &cj = child.joints[child.primaryJointIdx];
+
+	vec3d out;   // (Y)
+	vec3d front; // (Z)
+	vec3d side;  // (X)
+
+	if (parent.joints.size() == 2)
 	{
-		// p is the parent bone
-		Bone &p = bones[i];
+		vec3d a = parent.joints[0].pos;
+		vec3d b = parent.joints[1].pos;
+		if (parent.primaryJointIdx == 0)
+			out = normalize(b - a);
+		else
+			out = normalize(a - b);
+	}
+	else if ((parent.joints.size() > 2) && (child.joints.size() == 2))
+	{
+		vec3d a = child.joints[0].pos;
+		vec3d b = child.joints[1].pos;
+		if (child.primaryJointIdx == 0)
+			out = normalize(b - a);
+		else
+			out = normalize(a - b);
+	}
+	else
+		out = normalize(parent.displayVec);
 
-		for (int j = 0; j < (int)p.joints.size(); ++j)
-		{
-			if (j != p.primaryJointIdx)
-			{
-				// pj is the joint from the parent
-				Bone::Connection &pj = p.joints[j];
+	vec3d unitZ(0.0, 0.0, 1.0);
+	vec3d unitY(0.0, 1.0, 0.0);
+	if (dot(unitZ, out) > 0.8)
+		side = cross(unitY, out);
+	else
+		side = cross(out, unitZ);
+	front = cross(side, out);
 
-				// c is the child bone
-				Bone &c = *pj.to;
-				Bone::Connection &cj = c.joints[c.primaryJointIdx];
-				assert(cj.to == &p);
+	pj.jointToBone = mat3d(
+		side.x, out.x, front.x,
+		side.y, out.y, front.y,
+		side.z, out.z, front.z
+	);
 
-				vec3d out;   // (Y) the normal of the joint-plane
-				vec3d front; // (Z) a vector on the joint-plane which defines the zero-azimuth direction
-				vec3d side;  // (X) a vector orthogonal to out and front
-
-				out = normalize(pj.pos);
-
-				vec3d unitX(1.0, 0.0, 0.0);
-				vec3d unitZ(0.0, 0.0, 1.0);
-				if (abs(dot(out, unitX)) > 0.8)
-					front = cross(out, unitZ);
-				else
-					front = cross(unitX, out);
-				side = cross(out, front);
-
-				/*
-				pj.basis = mat3d(
-					side.x , side.y , side.z ,
-					 out.x ,  out.y ,  out.z ,
-					front.x, front.y, front.z
-				);
-				*/
-				pj.basis = mat3d(
-					side.x, out.x, front.x,
-					side.y, out.y, front.y,
-					side.z, out.z, front.z
-				);
-			}
-		}
+	for (int i = 0; i < (int)child.joints.size(); ++i)
+	{
+		if (i != child.primaryJointIdx)
+			initJointMatrices(child, *child.joints[i].to);
 	}
 }
 

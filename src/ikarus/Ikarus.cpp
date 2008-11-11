@@ -157,7 +157,6 @@ public:
 			skel.solver->iterateIk();
 
 		Label("Root bone:").run(gui, lyt);
-
 		ComboBox rootSel("root-sel", WidgetID(&skel.solver->getRootBone()));
 		for (int i = 0; i < skel.skeleton.numBones(); ++i)
 		{
@@ -167,6 +166,22 @@ public:
 		}
 		const Bone *newRootBone = rootSel.run(gui, lyt).getData<const Bone>();
 		skel.solver->setRootBone(*newRootBone);
+
+		Label("Effector:").run(gui, lyt);
+		ComboBox effectorSel("effector-sel", WidgetID(&skel.solver->getEffector()));
+		for (int i = 0; i < skel.skeleton.numBones(); ++i)
+		{
+			const Bone &b = skel.skeleton[i];
+			if (b.isEffector())
+				effectorSel.add(WidgetID(&b), b.name);
+		}
+		const Bone *newEffector = effectorSel.run(gui, lyt).getData<const Bone>();
+		if (newEffector != &skel.solver->getEffector())
+		{
+			skel.solver->setEffector(*newEffector);
+			skel.solver->setTargetPos(skel.solver->getEffectorPos());
+			skel.targetPos = skel.solver->getEffectorPos();
+		}
 
 		int leftRightSplit = 250;
 		int topBottomSplit = wndSize.y - 200;

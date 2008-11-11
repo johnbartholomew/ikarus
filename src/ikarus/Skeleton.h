@@ -83,7 +83,7 @@ public:
 	struct Connection
 	{
 		explicit Connection(Bone *to, vec3d v)
-			: to(to), pos(v), basis(1.0) {}
+			: to(to), pos(v), jointToBone(1.0) {}
 
 		// the bone that this connection goes to
 		Bone *to;
@@ -92,9 +92,9 @@ public:
 		// typically one joint will have a position of 0,0,0, but it's not required
 		vec3d pos;
 
-		// a matrix to take a point from bone-space to joint-space
+		// a matrix to take a point from joint-space to bone-space
 		// this matrix is used when applying joint constraints...
-		mat3d basis;
+		mat3d jointToBone;
 	};
 
 	explicit Bone(int id): id(id), displayVec(0.0, 0.0, 0.0), worldPos(0.0, 0.0, 0.0) {}
@@ -103,13 +103,49 @@ public:
 	std::string name;
 	std::vector<Connection> joints;
 
-	// each bone has a 'primary' joint
-	// which is typically the joint between it and its parent in the skeleton file
-	// also, typically primaryJointIdx == 0, and joints[primaryJointIdx].pos == vec3d(0,0,0)
-	// one of the bones in each joint should have that joint as its primary joint
-	// the constraints for the joint are stored with that bone
+	// the skeleton has a tree of bones
+	// this may not be the same tree used by clients of the skeleton,
+	// (eg, the IkSolver can change the tree to set different bones as root),
+	// but the parent-child relationships in this tree are used
+	// when dealing with joint constraints and some other joint properties
+	// it is assumed that each bone has a 'primary' joint which links to its parent
 	int primaryJointIdx;
 	JointConstraints constraints;
+
+	// the bone is displayed going from its 0,0,0 point
+	// to the displayVec (in bone-space)
+	// (0,0,0 is usually the position of one of its connections)
+	vec3d displayVec;
+
+	// the default world position of the origin of the bone-space basis
+	vec3d worldPos;
+
+	bool isChildOf(const Bone &b) const
+	{
+		return (getParent() == &b);
+	}
+
+	bool isParentOf(const Bone &b) const
+	{
+		return (this == b.getParent());
+	}
+
+	bool hasParent() const
+	{
+		return (getParent() != 0);
+	}
+
+	const Bone *getParent() const
+	{
+		if (primaryJointIdx >= 0 && primaryJointIdx < (int)joints.size())
+			return joints[primaryJointIdx].to;
+	}
+
+	Bone *getParent()
+	{
+		if (primaryJointIdx >= 0 && primaryJointIdx < (int)joints.size())
+			return joints[primaryJointIdx].to;
+	}
 
 	const Connection *findJointWith(const Bone &b) const
 	{
@@ -137,20 +173,12 @@ public:
 		return 0;
 	}
 
+	bool isEffector() const
+	{ return (joints.size() == 1) && (joints[0].pos == vec3d(0.0, 0.0, 0.0)); }
+
 	// expects the matrices to be set up to put vertices in bone-space
 	void render(const vec3f &col) const;
 	void renderJointCoordinates() const;
-
-	// the bone is displayed going from its 0,0,0 point
-	// to the displayVec (in bone-space)
-	// (0,0,0 is usually the position of one of its connections)
-	vec3d displayVec;
-
-	// the default world position of the origin of the bone-space basis
-	vec3d worldPos;
-
-	bool isEffector() const
-	{ return (joints.size() == 1) && (joints[0].pos == vec3d(0.0, 0.0, 0.0)); }
 };
 
 class Skeleton : public RefCounted
@@ -170,7 +198,7 @@ private:
 	refvector<Bone> bones;
 	void renderBone(const Bone *from, const Bone &b, const vec3d &base, bool showJointBasis) const;
 	void shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift);
-	void Skeleton::initJointMatrices();
+	void initJointMatrices(Bone &parent, Bone &child);
 };
 
 #endif

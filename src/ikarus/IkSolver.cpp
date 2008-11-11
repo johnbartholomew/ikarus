@@ -44,7 +44,7 @@ IkSolver::IkSolver(const Skeleton &skel)
 :	skeleton(skel),
 	rootBone(0),
 	effectorBone(0),
-	mApplyConstraints(false),
+	mApplyConstraints(true),
 	targetPos(0.0, 0.0, 0.0),
 	rootPos(0.0, 0.0, 0.0)
 {
@@ -266,17 +266,15 @@ void IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, con
 	// calculate the required rotation
 	quatd rot = calcRotation(relTip, relTarget);
 	if (rot == vmath::identityq<double>()) return;
+	
 	if (mApplyConstraints)
 		rot = applyConstraints(b, joint, rot);
+
+	if (rot == vmath::identityq<double>()) return;
 
 	// update the tip location
 	mat4d rotM = quat_to_mat4(rot);
 	tip = jointPos + transform_vector(rotM, relTip);
-
-	// sanity check
-	const vec3d tmpa = normalize(relTarget);
-	const vec3d tmpb = normalize(tip - jointPos);
-	assert(dot(tmpa, tmpb) > 0.999);
 
 	// update the bone state
 	BoneState &bs = boneStates[b.id];
@@ -285,7 +283,45 @@ void IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, con
 
 quatd IkSolver::applyConstraints(const Bone &b, const Bone::Connection &joint, const quatd &rot)
 {
-	return rot;
+	BoneState &bs = boneStates[b.id];
+	const Bone &c = *joint.to;
+	BoneState &cs = boneStates[c.id];
+	if ((b.primaryJointIdx >= 0) && (&b.joints[b.primaryJointIdx] == &joint))
+	{
+		// c is parent of b in the original skeleton
+		// therefore, b has the constraints information
+		// the joint basis is relative to c (and stored in c)
+
+		const Bone::Connection &cj = *c.findJointWith(b);
+
+		// orient is a rotation matrix to get from the parent bone's orientation to the child bone's orientation
+		// it represents the actual joint rotation which must be clamped
+		const mat3d orient = quat_to_mat3(bs.rot * rot);
+
+		vec3d orientX(orient.elem[0][0], orient.elem[1][0], orient.elem[2][0]);
+		vec3d orientY(orient.elem[0][1], orient.elem[1][1], orient.elem[2][1]);
+		vec3d orientZ(orient.elem[0][2], orient.elem[1][2], orient.elem[2][2]);
+
+		double elevation = 0.0;
+
+		vec3d projY(orientY.x, 0.0, orientY.z);
+		double lenSqrProjY = dot(projY, projY);
+		if (lenSqrProjY >= 0.001)
+		{
+			projY *= vmath::rsqrt(lenSqrProjY);
+			double cosEl = dot(projY, orientY);
+		}
+
+		quatd newRot = bs.rot * rot;
+		return inverse(bs.rot) * newRot;
+	}
+	else
+	{
+		assert(0);
+		// b is the parent of c in the original skeleton
+		// b has the constraints
+		return rot;
+	}
 }
 
 void IkSolver::updateBoneTransforms() const
