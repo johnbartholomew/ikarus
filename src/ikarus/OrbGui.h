@@ -131,6 +131,8 @@ private:
 class Label : public OrbWidget
 {
 public:
+	Label(const std::string &text, bool enabled = true)
+		: OrbWidget(WidgetID::NullWID), mText(text), mEnabled(enabled) {}
 	Label(const WidgetID &id, const std::string &text, bool enabled = true)
 		: OrbWidget(id), mText(text), mEnabled(enabled) {}
 
