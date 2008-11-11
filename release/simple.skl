@@ -1,6 +1,6 @@
 skeleton
 bonecount 5
-bone   Root      0.0   0.0  -5.0      0.0   0.0   5.0      -1
-bone   Base      0.0   0.0   0.0      0.0   4.0   0.0       0
-bone   Arm       0.0   4.0   0.0     -3.0   0.0   0.0       1
-bone   Hand     -3.0   4.0   0.0      0.0  -1.0   0.0       2
+bone   Root      0.0   0.0  -5.0      0.0   0.0   5.0      -1      fixed
+bone   Base      0.0   0.0   0.0      0.0   4.0   0.0       0      fixed
+bone   Arm       0.0   4.0   0.0     -3.0   0.0   0.0       1      saddle
+bone   Hand     -3.0   4.0   0.0      0.0  -1.0   0.0       2      hinge

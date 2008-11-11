@@ -153,15 +153,15 @@ void IkSolver::setEffector(const Bone &bone)
 	ikChain.clear();
 }
 
-void IkSolver::render() const
+void IkSolver::render(bool showJointBasis) const
 {
 	updateBoneTransforms();
-	renderBone(0, *rootBone);
+	renderBone(0, *rootBone, showJointBasis);
 	renderBlob(vec3f(1.0f, 0.0f, 0.0f), rootPos);
 	renderBlob(vec3f(0.0f, 1.0f, 0.0f), targetPos);
 }
 
-void IkSolver::renderBone(const Bone *parent, const Bone &b) const
+void IkSolver::renderBone(const Bone *parent, const Bone &b, bool showJointBasis) const
 {
 	const BoneState &bs = boneStates[b.id];
 
@@ -171,13 +171,15 @@ void IkSolver::renderBone(const Bone *parent, const Bone &b) const
 		b.render(vec3f(1.0f, 1.0f, 0.0f));
 	else
 		b.render(vec3f(1.0f, 1.0f, 1.0f));
+	if (showJointBasis)
+		b.renderJointCoordinates();
 	glPopMatrix();
 
 	for (int i = 0; i < (int)b.joints.size(); ++i)
 	{
 		const Bone &bn = *b.joints[i].to;
 		if (&bn != parent)
-			renderBone(&b, bn);
+			renderBone(&b, bn, showJointBasis);
 	}
 }
 

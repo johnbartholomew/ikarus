@@ -78,7 +78,12 @@ class Ikarus
 {
 public:
 	Ikarus()
-	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), curSkel(0), ikMode(true), ikEnabled(true)
+	:	camX(0), camY(1), camZ(2),
+		targetSpeed(0.0),
+		curSkel(0),
+		ikMode(true),
+		ikEnabled(true),
+		showJointBasis(false)
 	{
 		skeletons.push_back(new SkeletonItem("simple.skl", "Simple"));
 		skeletons.push_back(new SkeletonItem("human.skl", "Human"));
@@ -113,7 +118,7 @@ public:
 		
 		ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
 
-		Label("title", "Ikarus").run(gui, lyt);
+		Label("Ikarus").run(gui, lyt);
 
 		Spacer(vec2i(0, 10)).run(gui, lyt);
 
@@ -138,6 +143,8 @@ public:
 			skelSel.add(WidgetID(i), skeletons[i].name);
 		curSkel = skelSel.run(gui, lyt).getIndex();
 		SkeletonItem &skel = skeletons[curSkel];
+
+		showJointBasis = CheckBox("show-joint-basis-chk", "Show joint basis vectors", showJointBasis).run(gui, lyt);
 
 		ikMode = CheckBox("ik-mode-chk", "IK Mode", ikMode).run(gui, lyt);
 		bool newIkEnabled = CheckBox("ik-enabled-chk", "IK Enabled", ikMode && ikEnabled, ikMode).run(gui, lyt);
@@ -173,17 +180,17 @@ public:
 
 		if (ikMode)
 		{
-			IkSolverDisplay("displayP", &camPerspective, skel.solver.get(), gridList).run(gui, mainViewLyt);
-			IkSolverDisplay("displayX", &camX, skel.solver.get()).run(gui, ortho0Lyt);
-			IkSolverDisplay("displayY", &camY, skel.solver.get()).run(gui, ortho1Lyt);
-			IkSolverDisplay("displayZ", &camZ, skel.solver.get()).run(gui, ortho2Lyt);
+			IkSolverDisplay("displayP", &camPerspective, skel.solver.get(), showJointBasis, gridList).run(gui, mainViewLyt);
+			IkSolverDisplay("displayX", &camX, skel.solver.get(), showJointBasis).run(gui, ortho0Lyt);
+			IkSolverDisplay("displayY", &camY, skel.solver.get(), showJointBasis).run(gui, ortho1Lyt);
+			IkSolverDisplay("displayZ", &camZ, skel.solver.get(), showJointBasis).run(gui, ortho2Lyt);
 		}
 		else
 		{
-			SkeletonDisplay("displayP", &camPerspective, &skel.skeleton, gridList).run(gui, mainViewLyt);
-			SkeletonDisplay("displayX", &camX, &skel.skeleton).run(gui, ortho0Lyt);
-			SkeletonDisplay("displayY", &camY, &skel.skeleton).run(gui, ortho1Lyt);
-			SkeletonDisplay("displayZ", &camZ, &skel.skeleton).run(gui, ortho2Lyt);
+			SkeletonDisplay("displayP", &camPerspective, &skel.skeleton, showJointBasis, gridList).run(gui, mainViewLyt);
+			SkeletonDisplay("displayX", &camX, &skel.skeleton, showJointBasis).run(gui, ortho0Lyt);
+			SkeletonDisplay("displayY", &camY, &skel.skeleton, showJointBasis).run(gui, ortho1Lyt);
+			SkeletonDisplay("displayZ", &camZ, &skel.skeleton, showJointBasis).run(gui, ortho2Lyt);
 		}
 	}
 
@@ -250,6 +257,7 @@ private:
 	int curSkel;
 	bool ikMode;
 	bool ikEnabled;
+	bool showJointBasis;
 
 	refvector<SkeletonItem> skeletons;
 };

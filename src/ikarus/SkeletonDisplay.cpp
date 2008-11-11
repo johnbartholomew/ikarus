@@ -64,15 +64,15 @@ void ThreeDDisplay::run(OrbGui &gui, OrbLayout &lyt)
 
 void SkeletonDisplay::renderScene() const
 {
-	mSkeleton->render();
+	mSkeleton->render(mShowJointBasis);
 }
 
 void PoseDisplay::renderScene() const
 {
-	//mPose->render();
+	//mPose->render(mShowJointBasis);
 }
 
 void IkSolverDisplay::renderScene() const
 {
-	mSolver->render();
+	mSolver->render(mShowJointBasis);
 }

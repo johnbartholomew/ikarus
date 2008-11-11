@@ -83,27 +83,18 @@ public:
 	struct Connection
 	{
 		explicit Connection(Bone *to, vec3d v)
-			: to(to), basis(1.0), constraints(JointConstraints::Ball), pos(v) {}
+			: to(to), pos(v), basis(1.0) {}
 
 		// the bone that this connection goes to
 		Bone *to;
-
-		// constraints for this joint
-		// j = B(b - pos)
-		// where j is a position in joint-space, B is the joint basis and b is a position in bone-space
-		// B is a rotation matrix
-		// the joint constraints limit rotation of the bone in joint-space
-		mat3d basis;
-		JointConstraints constraints;
 
 		// position of the joint in bone-space
 		// typically one joint will have a position of 0,0,0, but it's not required
 		vec3d pos;
 
-		mat4d boneToJoint() const
-		{ return mat4d(basis) * vmath::translation_matrix(-pos); }
-		vec3d boneToJoint(const vec3d &v) const
-		{ return basis * (v - pos); }
+		// a matrix to take a point from bone-space to joint-space
+		// this matrix is used when applying joint constraints...
+		mat3d basis;
 	};
 
 	explicit Bone(int id): id(id), displayVec(0.0, 0.0, 0.0), worldPos(0.0, 0.0, 0.0) {}
@@ -111,6 +102,14 @@ public:
 	const int id;
 	std::string name;
 	std::vector<Connection> joints;
+
+	// each bone has a 'primary' joint
+	// which is typically the joint between it and its parent in the skeleton file
+	// also, typically primaryJointIdx == 0, and joints[primaryJointIdx].pos == vec3d(0,0,0)
+	// one of the bones in each joint should have that joint as its primary joint
+	// the constraints for the joint are stored with that bone
+	int primaryJointIdx;
+	JointConstraints constraints;
 
 	const Connection *findJointWith(const Bone &b) const
 	{
@@ -125,8 +124,22 @@ public:
 		return 0;
 	}
 
+	Connection *findJointWith(const Bone &b)
+	{
+		for (
+			std::vector<Connection>::iterator it = joints.begin();
+			it != joints.end();
+			++it)
+		{
+			if (it->to == &b)
+				return &(*it);
+		}
+		return 0;
+	}
+
 	// expects the matrices to be set up to put vertices in bone-space
 	void render(const vec3f &col) const;
+	void renderJointCoordinates() const;
 
 	// the bone is displayed going from its 0,0,0 point
 	// to the displayVec (in bone-space)
@@ -144,7 +157,7 @@ class Skeleton : public RefCounted
 {
 public:
 	void loadFromFile(const std::string &fname);
-	void render() const;
+	void render(bool showJointBasis) const;
 
 	const Bone &operator[](int idx) const
 	{ return bones[idx]; }
@@ -155,7 +168,7 @@ public:
 	{ return (int)bones.size(); }
 private:
 	refvector<Bone> bones;
-	void renderBone(const Bone *from, const Bone &b, const vec3d &base) const;
+	void renderBone(const Bone *from, const Bone &b, const vec3d &base, bool showJointBasis) const;
 	void shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift);
 	void Skeleton::initJointMatrices();
 };
