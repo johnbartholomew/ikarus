@@ -181,10 +181,23 @@ void IkSolver::renderBone(const Bone *parent, const Bone &b) const
 	}
 }
 
-void IkSolver::solveIk(int maxIterations)
+void IkSolver::solveIk(int maxIterations, double threshold)
 {
-	// not yet implemented
-	assert(0);
+	if (ikChain.size() == 0)
+		buildChain(*rootBone, *effectorBone, ikChain);
+
+	for (int i = 0; i < maxIterations; ++i)
+	{
+		// perform basic CCD
+		stepIk();
+
+		// need the bone transforms to be valid again afterwards for consistency
+		updateBoneTransforms();
+
+		vec3d delta = getEffectorPos() - getTargetPos();
+		if (abs(dot(delta,delta)) < threshold*threshold)
+			break;
+	}
 }
 
 void IkSolver::iterateIk()

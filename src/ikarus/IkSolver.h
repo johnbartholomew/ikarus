@@ -30,7 +30,7 @@ public:
 	void render() const;
 
 	// try to completely solve for the current target
-	void solveIk(int maxIterations);
+	void solveIk(int maxIterations, double threshold = 0.001);
 
 	// perform one iteration of whatever IK algorithm is being implemented
 	void iterateIk();

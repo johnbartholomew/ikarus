@@ -78,7 +78,7 @@ class Ikarus
 {
 public:
 	Ikarus()
-	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), curSkel(0)
+	:	camX(0), camY(1), camZ(2), targetSpeed(0.0), curSkel(0), ikMode(true), ikEnabled(true)
 	{
 		skeletons.push_back(new SkeletonItem("simple.skl", "Simple"));
 		skeletons.push_back(new SkeletonItem("human.skl", "Human"));
@@ -88,8 +88,12 @@ public:
 	{
 		SkeletonItem &skel = skeletons[curSkel];
 
-		updateTargetPos(gui);
-		skel.solver->iterateIk();
+		if (ikMode)
+		{
+			updateTargetPos(gui);
+			if (ikEnabled)
+				skel.solver->iterateIk();
+		}
 		runGui(gui);
 	}
 
@@ -127,11 +131,25 @@ public:
 			targetSpeed = 0.0;
 		}
 
+		Label("Skeleton:").run(gui, lyt);
+
 		ComboBox skelSel("skeleton-sel", WidgetID(curSkel));
 		for (int i = 0; i < (int)skeletons.size(); ++i)
 			skelSel.add(WidgetID(i), skeletons[i].name);
 		curSkel = skelSel.run(gui, lyt).getIndex();
 		SkeletonItem &skel = skeletons[curSkel];
+
+		ikMode = CheckBox("ik-mode-chk", "IK Mode", ikMode).run(gui, lyt);
+		bool newIkEnabled = CheckBox("ik-enabled-chk", "IK Enabled", ikMode && ikEnabled, ikMode).run(gui, lyt);
+		if (ikMode) ikEnabled = newIkEnabled;
+
+		if (Button("solve-btn", "Solve", ikMode && !ikEnabled).run(gui, lyt))
+			skel.solver->solveIk(30);
+
+		if (Button("step-btn", "Step IK", ikMode && !ikEnabled).run(gui, lyt))
+			skel.solver->iterateIk();
+
+		Label("Root bone:").run(gui, lyt);
 
 		ComboBox rootSel("root-sel", WidgetID(&skel.solver->getRootBone()));
 		for (int i = 0; i < skel.skeleton.numBones(); ++i)
@@ -148,10 +166,25 @@ public:
 		int a = leftRightSplit + (wndSize.x - leftRightSplit) / 3;
 		int b = leftRightSplit + ((wndSize.x - leftRightSplit)*2) / 3;
 
-		IkSolverDisplay("displayP", &camPerspective, skel.solver.get(), gridList).run(gui, FixedLayout(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit));
-		IkSolverDisplay("displayX", &camX, skel.solver.get()).run(gui, FixedLayout(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit));
-		IkSolverDisplay("displayY", &camY, skel.solver.get()).run(gui, FixedLayout(a, topBottomSplit, b - a, wndSize.y - topBottomSplit));
-		IkSolverDisplay("displayZ", &camZ, skel.solver.get()).run(gui, FixedLayout(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit));
+		FixedLayout mainViewLyt(leftRightSplit, 0, wndSize.x - leftRightSplit, topBottomSplit);
+		FixedLayout ortho0Lyt(leftRightSplit, topBottomSplit, a - leftRightSplit, wndSize.y - topBottomSplit);
+		FixedLayout ortho1Lyt(a, topBottomSplit, b - a, wndSize.y - topBottomSplit);
+		FixedLayout ortho2Lyt(b, topBottomSplit, wndSize.x - b, wndSize.y - topBottomSplit);
+
+		if (ikMode)
+		{
+			IkSolverDisplay("displayP", &camPerspective, skel.solver.get(), gridList).run(gui, mainViewLyt);
+			IkSolverDisplay("displayX", &camX, skel.solver.get()).run(gui, ortho0Lyt);
+			IkSolverDisplay("displayY", &camY, skel.solver.get()).run(gui, ortho1Lyt);
+			IkSolverDisplay("displayZ", &camZ, skel.solver.get()).run(gui, ortho2Lyt);
+		}
+		else
+		{
+			SkeletonDisplay("displayP", &camPerspective, &skel.skeleton, gridList).run(gui, mainViewLyt);
+			SkeletonDisplay("displayX", &camX, &skel.skeleton).run(gui, ortho0Lyt);
+			SkeletonDisplay("displayY", &camY, &skel.skeleton).run(gui, ortho1Lyt);
+			SkeletonDisplay("displayZ", &camZ, &skel.skeleton).run(gui, ortho2Lyt);
+		}
 	}
 
 	void updateTargetPos(OrbGui &gui)
@@ -215,6 +248,8 @@ private:
 
 	double targetSpeed;
 	int curSkel;
+	bool ikMode;
+	bool ikEnabled;
 
 	refvector<SkeletonItem> skeletons;
 };
