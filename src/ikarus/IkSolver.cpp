@@ -126,14 +126,11 @@ void IkSolver::setRootBone(const Bone &bone)
 	// this is required because the rotation values are specified relative to the parent bone,
 	// and the parent bone is dependent on which bone is root
 	std::vector<const Bone*>::const_iterator it = chain.begin();
-	quatd orient = vmath::identityq<double>();
 	while (it != chain.end())
 	{
 		const Bone &b = **it;
 		BoneState &bs = boneStates[b.id];
 		
-		orient = orient * bs.rot;
-
 		++it;
 		if (it != chain.end())
 		{
@@ -142,7 +139,7 @@ void IkSolver::setRootBone(const Bone &bone)
 			bs.rot = inverse(nbs.rot);
 		}
 		else
-			bs.rot = orient;
+			bs.rot = mat_to_quat(minor(bs.bonespace));
 	}
 
 	// set the new root, and its correct position
