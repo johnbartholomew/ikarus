@@ -132,7 +132,9 @@ namespace detail {
 	COMMON_OPERATORS(CLASS, COUNT) \
 	MOP_M_CLASS_TEMPLATE(CLASS, *=, COUNT) \
 	operator const T* () const { return &x; } \
-	operator T* () { return &x; }
+	operator T* () { return &x; } \
+	bool isnormalized() const \
+	{ return (abs(dot(*this,*this) - T(1)) < T(0.0001)); }
 
 #define FOP_G_SOURCE_TEMPLATE(OP, CLASS) \
 	{ CLASS<T> r = lhs; r OP##= rhs; return r; }
