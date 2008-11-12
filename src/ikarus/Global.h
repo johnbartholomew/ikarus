@@ -89,6 +89,19 @@ typedef vmath::mat4<double> mat4d;
 
 typedef vmath::quat<double> quatd;
 
+// ===== Utility Functions =====
+
+template <typename T>
+T clamp(const T &a, const T &b, const T &v)
+{
+	if (v < a)
+		return a;
+	else if (v > b)
+		return b;
+	else
+		return v;
+}
+
 // ===== Configuration Constants =====
 
 const double CameraDistance = 30.0;
