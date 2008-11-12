@@ -289,8 +289,70 @@ vec3d IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, co
 	return joint.pos + rot*relTip;
 }
 
+void IkSolver::applyAllConstraints()
+{
+	applyAllConstraints(0, *rootBone);
+	updateBoneTransforms();
+}
+
+void IkSolver::applyAllConstraints(const Bone *parent, const Bone &b)
+{
+	if ((parent == 0) && (b.primaryJointIdx >= 0))
+		applyConstraints(b, b.joints[b.primaryJointIdx]);
+	else if (parent != 0)
+		applyConstraints(b, *b.findJointWith(*parent));
+
+	for (int i = 0; i < (int)b.joints.size(); ++i)
+	{
+		const Bone::Connection &c = b.joints[i];
+		if (c.to != parent)
+			applyAllConstraints(&b, *c.to);
+	}
+}
+
 void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 {
+	// FIXME: need to handle this case
+	if (bj.to != b.getParent()) return;
+
+	BoneState &bs = boneStates[b.id];
+	const mat3d &rot = bs.rot;
+
+	const vec3d unitX(1.0, 0.0, 0.0);
+	const vec3d unitY(0.0, 1.0, 0.0);
+	const vec3d unitZ(0.0, 0.0, 1.0);
+
+	double az, el, twist, d;
+
+	// Y is the direction vector, X & Z give twist
+	vec3d dir = rot*unitY;
+
+	d = clamp(-1.0, 1.0, dot(dir, unitY));
+	el = std::acos(d);
+
+	if (abs(d) > 0.99)
+		az = 0.0;
+	else
+	{
+		vec3d dirOnPlane(dir.x, 0.0, dir.y);
+		dirOnPlane = normalize(dirOnPlane);
+
+		d = clamp(-1.0, 1.0, dot(dirOnPlane, unitZ));
+		az = std::acos(d);
+	}
+
+	mat3d azElM = vmath::azimuth_elevation_matrix3(az, el);
+	vec3d i = rot*unitX;
+	vec3d i0 = azElM*unitX;
+	d = clamp(-1.0, 1.0, dot(i, i0));
+	twist = std::acos(d);
+
+	const JointConstraints &cnst = b.constraints;
+	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
+	el = clamp(cnst.minElevation, cnst.maxElevation, el);
+	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
+
+	bs.rot = vmath::azimuth_elevation_matrix3(az, el) * vmath::rotation_matrix3(twist, unitY);
 }
 
 void IkSolver::updateBoneTransforms() const

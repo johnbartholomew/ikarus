@@ -34,6 +34,9 @@ public:
 
 	// perform one iteration of whatever IK algorithm is being implemented
 	void iterateIk();
+
+	// apply all joint constraints
+	void applyAllConstraints();
 	
 private:
 	struct BoneState
@@ -64,6 +67,7 @@ private:
 	vec3d stepIk();
 	vec3d updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, const vec3d &tip);
 
+	void applyAllConstraints(const Bone *parent, const Bone &b);
 	void applyConstraints(const Bone &b, const Bone::Connection &bj);
 
 	void resetBoneRot(const Bone *parent, const Bone &b);

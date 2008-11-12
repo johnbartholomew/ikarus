@@ -137,6 +137,13 @@ public:
 			targetSpeed = 0.0;
 		}
 
+		if (Button("constraint-btn", "Apply Constraints").run(gui, lyt))
+		{
+			oldSkel.solver->applyAllConstraints();
+			oldSkel.targetPos = oldSkel.solver->getEffectorPos();
+			targetSpeed = 0.0;
+		}
+
 		Label("Skeleton:").run(gui, lyt);
 
 		ComboBox skelSel("skeleton-sel", WidgetID(curSkel));
