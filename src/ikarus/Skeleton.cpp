@@ -100,6 +100,75 @@ void Bone::renderJointCoordinates() const
 	glEnd();
 }
 
+void Bone::renderJointConstraints() const
+{
+	const double radius = 0.75;
+
+	// render joint constraints with the parent bone
+	if ((primaryJointIdx >= 0) && (constraints.minTwist < constraints.maxTwist))
+	{
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glBegin(GL_LINE_STRIP);
+		arcPoints(
+			joints[primaryJointIdx].pos,
+			vec3d(0.0, 1.0, 0.0),
+			vec3d(0.0, 0.0, 1.0),
+			radius/2.0,
+			constraints.minTwist,
+			constraints.maxTwist
+		);
+		glEnd();
+	}
+
+	// render joint constraints for joints with child bones
+	for (int i = 0; i < (int)joints.size(); ++i)
+	{
+		const Bone::Connection &c = joints[i];
+
+		if ((i != primaryJointIdx) || (c.to->isChildOf(*this)))
+		{
+			// don't bother with joints going to effectors
+			// effectors can't do anything anyway (they're just points)
+			if (c.to->isEffector()) continue;
+
+			const Bone &child = *c.to;
+			const JointConstraints &cnst = child.constraints;
+
+			glColor3f(0.0f, 1.0f, 0.0f);
+			glBegin(GL_LINE_STRIP);
+			arcPoints(
+				c.pos,
+				vec3d(0.0, 1.0, 0.0),
+				vec3d(0.0, 0.0, 1.0),
+				radius,
+				cnst.minAzimuth,
+				cnst.maxAzimuth
+			);
+			glEnd();
+
+			glColor3f(0.0f, 0.0f, 1.0f);
+
+			double range = cnst.maxAzimuth - cnst.minAzimuth;
+			int N = 1 + (int)(range / (M_PI/6.0));
+			for (int i = 0; i <= N; ++i)
+			{
+				double a = cnst.minAzimuth + i*(range/N);
+
+				glBegin(GL_LINE_STRIP);
+				arcPoints(
+					c.pos,
+					vec3d(sin(a), 0.0, cos(a)),
+					vec3d(0.0, 1.0, 0.0),
+					radius,
+					cnst.minElevation,
+					cnst.maxElevation
+				);
+				glEnd();
+			}
+		}
+	}
+}
+
 // ===== Skeleton ============================================================
 
 void Skeleton::loadFromFile(const std::string &fname)
@@ -308,14 +377,14 @@ void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone)
 	}
 }
 
-void Skeleton::render(bool showJointBasis) const
+void Skeleton::render(bool showJointBasis, bool showJointConstraints) const
 {
 	const vec3d rootPos = bones[0].worldPos;
 	renderBlob(vec3f(1.0f, 0.0f, 0.0f), rootPos);
-	renderBone(0, bones[0], rootPos, showJointBasis);
+	renderBone(0, bones[0], rootPos, showJointBasis, showJointConstraints);
 }
 
-void Skeleton::renderBone(const Bone *from, const Bone &b, const vec3d &pos, bool showJointBasis) const
+void Skeleton::renderBone(const Bone *from, const Bone &b, const vec3d &pos, bool showJointBasis, bool showJointConstraints) const
 {
 	const mat3d &basis = b.defaultOrient;
 	// render the bone...
@@ -325,12 +394,14 @@ void Skeleton::renderBone(const Bone *from, const Bone &b, const vec3d &pos, boo
 	b.render(vec3f(1.0f, 1.0f, 1.0f));
 	if (showJointBasis && !b.isEffector())
 		b.renderJointCoordinates();
+	if (showJointConstraints && !b.isEffector())
+		b.renderJointConstraints();
 	glPopMatrix();
 
 	for (int i = 0; i < (int)b.joints.size(); ++i)
 	{
 		const Bone::Connection &c = b.joints[i];
 		if (c.to != from)
-			renderBone(&b, *c.to, pos + basis*c.pos, showJointBasis);
+			renderBone(&b, *c.to, pos + basis*c.pos, showJointBasis, showJointConstraints);
 	}
 }

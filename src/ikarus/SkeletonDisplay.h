@@ -24,37 +24,40 @@ private:
 class SkeletonDisplay : public ThreeDDisplay
 {
 public:
-	SkeletonDisplay(const WidgetID &wid, Camera *camera, const Skeleton *skeleton, bool showJointBasis, GLuint gridList = 0)
-		: ThreeDDisplay(wid, camera, gridList), mSkeleton(skeleton), mShowJointBasis(showJointBasis) {}
+	SkeletonDisplay(const WidgetID &wid, Camera *camera, const Skeleton *skeleton, bool showJointBasis, bool showConstraints, GLuint gridList = 0)
+		: ThreeDDisplay(wid, camera, gridList), mSkeleton(skeleton), mShowJointBasis(showJointBasis), mShowConstraints(showConstraints) {}
 
 	virtual void renderScene() const;
 private:
 	const Skeleton *mSkeleton;
 	bool mShowJointBasis;
+	bool mShowConstraints;
 };
 
 class PoseDisplay : public ThreeDDisplay
 {
 public:
-	PoseDisplay(const WidgetID &wid, Camera *camera, const Pose *pose, bool showJointBasis, GLuint gridList = 0)
-		: ThreeDDisplay(wid, camera, gridList), mPose(pose), mShowJointBasis(showJointBasis) {}
+	PoseDisplay(const WidgetID &wid, Camera *camera, const Pose *pose, bool showJointBasis, bool showConstraints, GLuint gridList = 0)
+		: ThreeDDisplay(wid, camera, gridList), mPose(pose), mShowJointBasis(showJointBasis), mShowConstraints(showConstraints) {}
 
 	virtual void renderScene() const;
 private:
 	const Pose *mPose;
 	bool mShowJointBasis;
+	bool mShowConstraints;
 };
 
 class IkSolverDisplay : public ThreeDDisplay
 {
 public:
-	IkSolverDisplay(const WidgetID &wid, Camera *camera, const IkSolver *solver, bool showJointBasis, GLuint gridList = 0)
-		: ThreeDDisplay(wid, camera, gridList), mSolver(solver), mShowJointBasis(showJointBasis) {}
+	IkSolverDisplay(const WidgetID &wid, Camera *camera, const IkSolver *solver, bool showJointBasis, bool showConstraints, GLuint gridList = 0)
+		: ThreeDDisplay(wid, camera, gridList), mSolver(solver), mShowJointBasis(showJointBasis), mShowConstraints(showConstraints) {}
 
 	virtual void renderScene() const;
 private:
 	const IkSolver *mSolver;
 	bool mShowJointBasis;
+	bool mShowConstraints;
 };
 
 #endif

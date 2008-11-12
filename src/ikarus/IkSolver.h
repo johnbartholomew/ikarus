@@ -27,7 +27,7 @@ public:
 	void resetPose();
 
 	// render the skeleton, with root, effector and target highlighted
-	void render(bool showJointBasis) const;
+	void render(bool showJointBasis, bool showJointConstraints) const;
 
 	// try to completely solve for the current target
 	void solveIk(int maxIterations, double threshold = 0.001);

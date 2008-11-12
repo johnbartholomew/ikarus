@@ -19,14 +19,31 @@ mat3d calcRotation(const vec3d &tip, const vec3d &target)
 	assert(abs(dot(a,a) - 1.0) < 0.0001);
 	assert(abs(dot(b,b) - 1.0) < 0.0001);
 
+	vec3d axis;
+
 	double dotAB = dot(a, b);
 	double angle;
 	if (dotAB <= -1.0)
+	{
+		// angle is 180 degrees; any axis will do...
 		angle = M_PI;
+		const vec3d unitX(1.0, 0.0, 0.0);
+		const vec3d unitZ(0.0, 0.0, 1.0);
+		if (abs(dot(a, unitX)) < 0.8)
+			axis = normalize(cross(a, unitX));
+		else
+			axis = normalize(cross(a, unitZ));
+	}
 	else if (dotAB >= 1.0)
-		angle = 0.0;
+	{
+		// angle is zero; no rotation
+		return mat3d(1.0);
+	}
 	else
+	{
 		angle = std::acos(dotAB);
+		axis = cross(a, b);
+	}
 
 	// sanity check
 	assert(angle >= -M_PI && angle <= M_PI);
@@ -35,7 +52,7 @@ mat3d calcRotation(const vec3d &tip, const vec3d &target)
 	if (angle < 0.001)
 		return mat3d(1.0);
 
-	return vmath::rotation_matrix3(angle, cross(a, b));
+	return vmath::rotation_matrix3(angle, axis);
 }
 
 // ===== IkSolver ============================================================
@@ -176,7 +193,7 @@ void IkSolver::setEffector(const Bone &bone)
 	ikChain.clear();
 }
 
-void IkSolver::render(bool showJointBasis) const
+void IkSolver::render(bool showJointBasis, bool showJointConstraints) const
 {
 	for (int i = 0; i < skeleton.numBones(); ++i)
 	{
@@ -193,6 +210,9 @@ void IkSolver::render(bool showJointBasis) const
 
 		if (showJointBasis && !b.isEffector())
 			b.renderJointCoordinates();
+		
+		if (showJointConstraints && !b.isEffector())
+			b.renderJointConstraints();
 
 		glPopMatrix();
 	}

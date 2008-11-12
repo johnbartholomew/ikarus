@@ -34,21 +34,21 @@ public:
 		if (type == Ball)
 		{
 			minElevation = 0.0;
-			maxElevation = M_PI;
+			maxElevation = M_PI/2.0;
 			minTwist = minAzimuth = -M_PI;
 			maxTwist = maxAzimuth = M_PI;
 		}
 		else if (type == Saddle)
 		{
 			minElevation = 0.0;
-			maxElevation = M_PI;
+			maxElevation = M_PI/2.0;
 			minAzimuth = -M_PI;
 			maxAzimuth = M_PI;
 			minTwist = maxTwist = 0.0;
 		}
 		else if (type == Hinge)
 		{
-			minElevation = -M_PI;
+			minElevation = 0.0;
 			maxElevation = M_PI;
 			minAzimuth = maxAzimuth = 0.0;
 			minTwist = maxTwist = 0.0;
@@ -192,13 +192,14 @@ public:
 	// expects the matrices to be set up to put vertices in bone-space
 	void render(const vec3f &col) const;
 	void renderJointCoordinates() const;
+	void renderJointConstraints() const;
 };
 
 class Skeleton : public RefCounted
 {
 public:
 	void loadFromFile(const std::string &fname);
-	void render(bool showJointBasis) const;
+	void render(bool showJointBasis, bool showJointConstraints) const;
 
 	const Bone &operator[](int idx) const
 	{ return bones[idx]; }
@@ -210,7 +211,7 @@ public:
 private:
 	refvector<Bone> bones;
 
-	void renderBone(const Bone *from, const Bone &b, const vec3d &pos, bool showJointBasis) const;
+	void renderBone(const Bone *from, const Bone &b, const vec3d &pos, bool showJointBasis, bool showJointConstraints) const;
 	void shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift);
 	
 	void initJointMatrices(Bone &parent, Bone &child);
