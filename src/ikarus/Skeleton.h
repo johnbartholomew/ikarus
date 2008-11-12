@@ -217,7 +217,7 @@ private:
 	void initJointMatrix(Bone &parent, Bone &child, Bone::Connection &pj, Bone::Connection &cj);
 
 	void initBoneMatrices();
-	void initBoneMatrix(const Bone *parent, Bone &bone, const mat3d &parentOrient);
+	void initBoneMatrix(const Bone *parent, Bone &bone);
 };
 
 #endif

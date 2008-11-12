@@ -244,10 +244,10 @@ void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &s
 
 void Skeleton::initBoneMatrices()
 {
-	initBoneMatrix(0, bones[0], mat3d(1.0));
+	initBoneMatrix(0, bones[0]);
 }
 
-void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone, const mat3d &parentOrient)
+void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone)
 {
 	// early-out for effectors (they keep the identity matrix)
 	if (bone.isEffector()) return;
@@ -274,12 +274,17 @@ void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone, const mat3d &paren
 
 	double dotAlongX = dot(along, unitX);
 	if (dotAlongX < -0.8)
-		front = cross(unitY, along);
+		front = normalize(cross(unitY, along));
 	else if (dotAlongX > 0.8)
-		front = cross(along, unitY);
+		front = normalize(cross(along, unitY));
 	else
-		front = cross(unitX, along);
+		front = normalize(cross(unitX, along));
 	side = cross(along, front);
+
+	// sanity check
+	assert(along.isnormalized());
+	assert(front.isnormalized());
+	assert(side.isnormalized());
 
 	bone.defaultOrient = mat3d(
 		side.x, along.x, front.x,
@@ -299,7 +304,7 @@ void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone, const mat3d &paren
 	{
 		Bone::Connection &c = bone.joints[i];
 		if (c.to != parent)
-			initBoneMatrix(&bone, *c.to, bone.defaultOrient);
+			initBoneMatrix(&bone, *c.to);
 	}
 }
 
