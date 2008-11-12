@@ -171,7 +171,7 @@ void IkSolver::renderBone(const Bone *parent, const Bone &b, bool showJointBasis
 		b.render(vec3f(1.0f, 1.0f, 0.0f));
 	else
 		b.render(vec3f(1.0f, 1.0f, 1.0f));
-	if (showJointBasis)
+	if (showJointBasis && !b.isEffector())
 		b.renderJointCoordinates();
 	glPopMatrix();
 
@@ -281,39 +281,63 @@ void IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, con
 	bs.rot = bs.rot * rot;
 }
 
-quatd IkSolver::applyConstraints(const Bone &b, const Bone::Connection &joint, const quatd &rot)
+quatd IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj, const quatd &rot)
 {
 	BoneState &bs = boneStates[b.id];
-	const Bone &c = *joint.to;
-	BoneState &cs = boneStates[c.id];
-	if ((b.primaryJointIdx >= 0) && (&b.joints[b.primaryJointIdx] == &joint))
+	const Bone &p = *bj.to;
+	BoneState &ps = boneStates[p.id];
+
+	if ((b.primaryJointIdx >= 0) && (&b.joints[b.primaryJointIdx] == &bj))
 	{
-		// c is parent of b in the original skeleton
+		// p is parent of b in the original skeleton
 		// therefore, b has the constraints information
-		// the joint basis is relative to c (and stored in c)
+		// the joint basis is relative to p (and stored in p)
 
-		const Bone::Connection &cj = *c.findJointWith(b);
+		const Bone::Connection &pj = *p.findJointWith(b);
+		mat3d M;
 
-		// orient is a rotation matrix to get from the parent bone's orientation to the child bone's orientation
-		// it represents the actual joint rotation which must be clamped
-		const mat3d orient = quat_to_mat3(bs.rot * rot);
+		quatd fullRot = bs.rot * rot;
 
-		vec3d orientX(orient.elem[0][0], orient.elem[1][0], orient.elem[2][0]);
-		vec3d orientY(orient.elem[0][1], orient.elem[1][1], orient.elem[2][1]);
-		vec3d orientZ(orient.elem[0][2], orient.elem[1][2], orient.elem[2][2]);
+		M = transpose(pj.jointToBone) * bj.jointToBone * quat_to_mat3(fullRot);
+		vec3d rotX = M * vec3d(1.0, 0.0, 0.0);
+		vec3d rotY = M * vec3d(0.0, 1.0, 0.0);
+		vec3d rotZ = M * vec3d(0.0, 0.0, 1.0);
 
-		double elevation = 0.0;
+		double el, az;
 
-		vec3d projY(orientY.x, 0.0, orientY.z);
-		double lenSqrProjY = dot(projY, projY);
-		if (lenSqrProjY >= 0.001)
+		// project rotY onto the joint's X/Z plane
+		vec3d projY(rotY.x, 0.0, rotY.z);
+		if (abs(dot(projY, projY)) < 0.001)
 		{
-			projY *= vmath::rsqrt(lenSqrProjY);
-			double cosEl = dot(projY, orientY);
+			el = M_PI;
+			az = 0.0;
+		}
+		else
+		{
+			projY = normalize(projY);
+			double cosEl = clamp(-1.0, 1.0, dot(projY, rotY));
+			double cosAz = clamp(-1.0, 1.0, dot(projY, vec3d(1.0, 0.0, 0.0)));
+
+			el = std::acos(cosEl);
+			az = std::acos(cosAz);
 		}
 
-		quatd newRot = bs.rot * rot;
-		return inverse(bs.rot) * newRot;
+		mat3d elAzM = vmath::azimuth_elevation_matrix3(az, el);
+
+		mat3d invElAzM = transpose(elAzM);
+		vec3d dirX = invElAzM * rotX;
+
+		double cosTwist = clamp(-1.0, 1.0, dot(dirX, vec3d(1.0, 0.0, 0.0)));
+		double twist = std::acos(cosTwist);
+
+		const JointConstraints &cnst = b.constraints;
+		el = clamp(cnst.minElevation, cnst.maxElevation, el);
+		az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
+		twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
+
+		M = vmath::azimuth_elevation_matrix3(az, el) * minor(vmath::rotation_matrix(twist, 0.0, 1.0, 0.0));
+		M = transpose(quat_to_mat3(bs.rot)) * transpose(bj.jointToBone) * M;
+		return mat_to_quat(M);
 	}
 	else
 	{

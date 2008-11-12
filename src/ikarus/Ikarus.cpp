@@ -81,9 +81,9 @@ public:
 	:	camX(0), camY(1), camZ(2),
 		targetSpeed(0.0),
 		curSkel(0),
-		ikMode(true),
-		ikEnabled(true),
-		showJointBasis(false)
+		ikMode(false),
+		ikEnabled(false),
+		showJointBasis(true)
 	{
 		skeletons.push_back(new SkeletonItem("simple.skl", "Simple"));
 		skeletons.push_back(new SkeletonItem("human.skl", "Human"));
@@ -147,8 +147,7 @@ public:
 		showJointBasis = CheckBox("show-joint-basis-chk", "Show joint basis vectors", showJointBasis).run(gui, lyt);
 
 		ikMode = CheckBox("ik-mode-chk", "IK Mode", ikMode).run(gui, lyt);
-		bool newIkEnabled = CheckBox("ik-enabled-chk", "IK Enabled", ikMode && ikEnabled, ikMode).run(gui, lyt);
-		if (ikMode) ikEnabled = newIkEnabled;
+		ikEnabled = CheckBox("ik-enabled-chk", "IK Enabled", ikEnabled, ikMode).run(gui, lyt);
 
 		if (Button("solve-btn", "Solve", ikMode && !ikEnabled).run(gui, lyt))
 			skel.solver->solveIk(30);

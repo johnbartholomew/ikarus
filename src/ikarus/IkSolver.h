@@ -68,7 +68,7 @@ private:
 	vec3d stepIk();
 	void updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, vec3d &tip);
 
-	quatd applyConstraints(const Bone &b, const Bone::Connection &joint, const quatd &rot);
+	quatd applyConstraints(const Bone &b, const Bone::Connection &bj, const quatd &rot);
 
 	void updateBoneTransforms() const;
 	void updateBoneTransform(const Bone *parent, const Bone &b, const mat4d &basis) const;

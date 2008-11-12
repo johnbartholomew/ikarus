@@ -145,7 +145,6 @@ void Skeleton::loadFromFile(const std::string &fname)
 				>> parentId
 				>> jointType;
 
-			b.primaryJointIdx = -1;
 			if (jointType == "fixed")
 				b.constraints = JointConstraints(JointConstraints::Fixed);
 			else if (jointType == "ball")
@@ -229,6 +228,9 @@ void Skeleton::loadFromFile(const std::string &fname)
 		}
 	}
 
+	initBoneMatrices();
+
+#if 0
 	// initialize the joint spaces
 	for (int i = 0; i < (int)roots.size(); ++i)
 	{
@@ -241,6 +243,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 				initJointMatrices(b, *b.joints[j].to);
 		}
 	}
+#endif
 }
 
 void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift)
@@ -256,10 +259,24 @@ void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &s
 
 void Skeleton::initJointMatrices(Bone &parent, Bone &child)
 {
+	// early-out for effectors (they have no length and no children of their own, so they're sort of irrelevant)
+	if (child.isEffector()) return;
+
 	Bone::Connection &pj = *parent.findJointWith(child);
 	assert(child.primaryJointIdx >= 0);
 	Bone::Connection &cj = child.joints[child.primaryJointIdx];
 
+	initJointMatrix(parent, child, pj, cj);
+
+	for (int i = 0; i < (int)child.joints.size(); ++i)
+	{
+		if (i != child.primaryJointIdx)
+			initJointMatrices(child, *child.joints[i].to);
+	}
+}
+
+void Skeleton::initJointMatrix(Bone &parent, Bone &child, Bone::Connection &pj, Bone::Connection &cj)
+{
 	vec3d out;   // (Y)
 	vec3d front; // (Z)
 	vec3d side;  // (X)
@@ -298,11 +315,66 @@ void Skeleton::initJointMatrices(Bone &parent, Bone &child)
 		side.y, out.y, front.y,
 		side.z, out.z, front.z
 	);
+}
 
-	for (int i = 0; i < (int)child.joints.size(); ++i)
+void Skeleton::initBoneMatrices()
+{
+	initBoneMatrix(0, bones[0], mat3d(1.0));
+}
+
+void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone, const mat3d &parentOrient)
+{
+	// early-out for effectors (they keep the identity matrix)
+	if (bone.isEffector()) return;
+
+	vec3d along; // (Y)
+	vec3d front; // (Z)
+	vec3d side;  // (X)
+
+	if (bone.joints.size() == 2)
 	{
-		if (i != child.primaryJointIdx)
-			initJointMatrices(child, *child.joints[i].to);
+		vec3d a = bone.joints[0].pos;
+		vec3d b = bone.joints[1].pos;
+		if (bone.primaryJointIdx == 0)
+			along = normalize(b - a);
+		else
+			along = normalize(a - b);
+	}
+	else
+		along = normalize(bone.displayVec);
+
+	vec3d unitX(1.0, 0.0, 0.0);
+	vec3d unitY(0.0, 1.0, 0.0);
+	vec3d unitZ(0.0, 0.0, 1.0);
+
+	double dotAlongX = dot(along, unitX);
+	if (dotAlongX < -0.8)
+		front = cross(unitY, along);
+	else if (dotAlongX > 0.8)
+		front = cross(along, unitY);
+	else
+		front = cross(unitX, along);
+	side = cross(along, front);
+
+	bone.defaultOrient = mat3d(
+		side.x, along.x, front.x,
+		side.y, along.y, front.y,
+		side.z, along.z, front.z
+	);
+
+	mat3d invOrient = transpose(bone.defaultOrient);
+	for (int i = 0; i < (int)bone.joints.size(); ++i)
+	{
+		Bone::Connection &c = bone.joints[i];
+		c.pos = invOrient * c.pos;
+	}
+	bone.displayVec = invOrient * bone.displayVec;
+
+	for (int i = 0; i < (int)bone.joints.size(); ++i)
+	{
+		Bone::Connection &c = bone.joints[i];
+		if (c.to != parent)
+			initBoneMatrix(&bone, *c.to, bone.defaultOrient);
 	}
 }
 
@@ -313,14 +385,15 @@ void Skeleton::render(bool showJointBasis) const
 	renderBone(0, bones[0], rootPos, showJointBasis);
 }
 
-void Skeleton::renderBone(const Bone *from, const Bone &b, const vec3d &base, bool showJointBasis) const
+void Skeleton::renderBone(const Bone *from, const Bone &b, const vec3d &pos, bool showJointBasis) const
 {
+	const mat3d &basis = b.defaultOrient;
 	// render the bone...
 	glPushMatrix();
-	mat4d basis = vmath::translation_matrix(base);
-	glMultMatrixd(basis);
+	const mat4d frame(vmath::translation_matrix(pos) * mat4d(basis));
+	glMultMatrixd(frame);
 	b.render(vec3f(1.0f, 1.0f, 1.0f));
-	if (showJointBasis)
+	if (showJointBasis && !b.isEffector())
 		b.renderJointCoordinates();
 	glPopMatrix();
 
@@ -328,6 +401,6 @@ void Skeleton::renderBone(const Bone *from, const Bone &b, const vec3d &base, bo
 	{
 		const Bone::Connection &c = b.joints[i];
 		if (c.to != from)
-			renderBone(&b, *c.to, c.pos + base, showJointBasis);
+			renderBone(&b, *c.to, pos + basis*c.pos, showJointBasis);
 	}
 }

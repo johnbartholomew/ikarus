@@ -33,13 +33,17 @@ public:
 	{
 		if (type == Ball)
 		{
-			minTwist = minElevation = minAzimuth = -M_PI;
-			maxTwist = maxElevation = maxAzimuth = M_PI;
+			minElevation = 0.0;
+			maxElevation = M_PI;
+			minTwist = minAzimuth = -M_PI;
+			maxTwist = maxAzimuth = M_PI;
 		}
 		else if (type == Saddle)
 		{
-			minElevation = minAzimuth = -M_PI;
-			maxElevation = maxAzimuth = M_PI;
+			minElevation = 0.0;
+			maxElevation = M_PI;
+			minAzimuth = -M_PI;
+			maxAzimuth = M_PI;
 			minTwist = maxTwist = 0.0;
 		}
 		else if (type == Hinge)
@@ -97,7 +101,10 @@ public:
 		mat3d jointToBone;
 	};
 
-	explicit Bone(int id): id(id), displayVec(0.0, 0.0, 0.0), worldPos(0.0, 0.0, 0.0) {}
+	explicit Bone(int id):
+		id(id), primaryJointIdx(-1),
+		displayVec(0.0, 0.0, 0.0), worldPos(0.0, 0.0, 0.0), defaultOrient(1.0)
+	{}
 
 	const int id;
 	std::string name;
@@ -119,6 +126,12 @@ public:
 
 	// the default world position of the origin of the bone-space basis
 	vec3d worldPos;
+
+	// the default orientation of the bone
+	// this is a matrix which takes a vector from bone space to world space
+	// nb: this is the *absolute* orientation of the bone
+	// (which makes it independent of traversal order)
+	mat3d defaultOrient;
 
 	bool isChildOf(const Bone &b) const
 	{
@@ -196,9 +209,15 @@ public:
 	{ return (int)bones.size(); }
 private:
 	refvector<Bone> bones;
-	void renderBone(const Bone *from, const Bone &b, const vec3d &base, bool showJointBasis) const;
+
+	void renderBone(const Bone *from, const Bone &b, const vec3d &pos, bool showJointBasis) const;
 	void shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift);
+	
 	void initJointMatrices(Bone &parent, Bone &child);
+	void initJointMatrix(Bone &parent, Bone &child, Bone::Connection &pj, Bone::Connection &cj);
+
+	void initBoneMatrices();
+	void initBoneMatrix(const Bone *parent, Bone &bone, const mat3d &parentOrient);
 };
 
 #endif

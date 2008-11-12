@@ -768,7 +768,7 @@ inline mat4<T> rotation_matrix(const T angle, const T x, const T y, const T z)
 }
 
 template <typename T>
-inline mat4<T> azimuth_elevation_matrix(const T az, const T el)
+inline mat3<T> azimuth_elevation_matrix3(const T az, const T el)
 {
 	const T caz = cos(az);
 	const T saz = sin(az);
@@ -776,44 +776,17 @@ inline mat4<T> azimuth_elevation_matrix(const T az, const T el)
 	const T sel = sin(el);
 
 	// elevation * azimuth
-	return mat4<T>(
-		   caz  ,  0.0,    saz  ,  0.0,
-		-saz*sel,  cel,  sel*caz,  0.0,
-		-saz*cel, -sel,  cel*caz,  0.0,
-		   0.0  ,  0.0,     0.0 ,  1.0
+	return mat3<T>(
+		   caz  ,  0.0,    saz  ,
+		-saz*sel,  cel,  sel*caz,
+		-saz*cel, -sel,  cel*caz
 	);
+}
 
-/*
-#if 0
-	// the matrix for azimuthal rotation (a rotation around the y axis)
-	return mat4<T>(
-		 caz,  0.0  ,  saz  ,  0.0,
-		 0.0,  1.0  ,  0.0  ,  0.0,
-		-saz,  0.0  ,  caz  ,  0.0,
-		 0.0,  0.0  ,  0.0  ,  1.0
-	);
-#endif
-
-#if 0
-	// the matrix for elivation rotation (a rotation around the x axis)
-	return mat4<T>(
-		 1.0,  0.0  ,  0.0  ,  0.0,
-		 0.0,  cel  ,  sel  ,  0.0,
-		 0.0, -sel  ,  cel  ,  0.0,
-		 0.0,  0.0  ,  0.0  ,  1.0
-	);
-#endif
-
-#if 0
-	// the matrix for both at once (nb: *not* the same as the two matrices multiplied together)
-	return mat4<T>(
-		 caz,  sel*saz,  cel*saz,  0.0,
-		 0.0,    cel  ,   -sel  ,  0.0,
-		-saz,  sel*caz,  cel*caz,  0.0,
-		 0.0,    0.0  ,    0.0  ,  1.0
-	);
-#endif
-*/
+template <typename T>
+inline mat4<T> azimuth_elevation_matrix4(const T az, const T el)
+{
+	return mat4<T>(azimuth_elevation_matrix3(az, el));
 }
 
 // Constructs a shear-matrix that shears component i by factor with

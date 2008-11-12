@@ -129,7 +129,7 @@ mat4d CameraAzimuthElevation::getProjection(const recti &bounds) const
 
 mat4d CameraAzimuthElevation::getModelView() const
 {
-	return vmath::translation_matrix(0.0, -GridWidth/4.0, -cameraDist) * vmath::azimuth_elevation_matrix(az, el);
+	return vmath::translation_matrix(0.0, -GridWidth/4.0, -cameraDist) * vmath::azimuth_elevation_matrix4(az, el);
 }
 
 void CameraAzimuthElevation::renderUI(const recti &bounds) const
