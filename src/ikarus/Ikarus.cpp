@@ -82,10 +82,11 @@ public:
 		targetSpeed(0.0),
 		curSkel(0),
 		ikMode(true),
-		ikEnabled(true),
+		ikEnabled(false),
 		showJointBasis(true)
 	{
 		skeletons.push_back(new SkeletonItem("simple.skl", "Simple"));
+		skeletons.push_back(new SkeletonItem("snake.skl", "Snake"));
 		skeletons.push_back(new SkeletonItem("human.skl", "Human"));
 	}
 
