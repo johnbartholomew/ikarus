@@ -79,3 +79,27 @@ void renderBox(const vec3f &bgCol, const vec3f &borderCol, const recti &rect, in
 	glColor3fv(borderCol);
 	boxPoints(a, b, cornerRadius, true);
 }
+
+void arcPoints(const vec3d &centre, const vec3d &normal, const vec3d &zeroDir, double radius, double startAngle, double endAngle)
+{
+	assert(dot(normal, zeroDir) == 0.0);
+	vec3d side = cross(normal, zeroDir);
+
+	mat3d orient(
+		zeroDir.x, side.x, normal.x,
+		zeroDir.y, side.y, normal.y,
+		zeroDir.z, side.z, normal.z
+	);
+
+	double range = endAngle - startAngle;
+	int N = 1 + (int)(range / (M_PI/16.0));
+	for (int i = 0; i <= N; ++i)
+	{
+		double a = startAngle + i*(range/N);
+		vec3d v(radius*cos(a), radius*sin(a), 0.0);
+		v = orient * v;
+		v = centre + v;
+
+		glVertex3d(v.x, v.y, v.z);
+	}
+}
