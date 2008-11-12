@@ -156,8 +156,10 @@ bool Button::run(OrbGui &gui, OrbLayout &lyt)
 
 	vec2f szf(gui.textOut->measureText(gui.font, mText));
 	vec2i sz((int)szf.x, (int)szf.y);
-	sz += vec2i(10, 4);
+	sz += vec2i(10, 7);
 	recti bounds = lyt.place(sz);
+	bounds.topLeft.y += 2;
+	bounds.size.y -= 3;
 
 	vec3f bgCol, borderCol, textCol;
 

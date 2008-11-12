@@ -105,8 +105,6 @@ public:
 
 	void runGui(OrbGui &gui)
 	{
-		SkeletonItem &oldSkel = skeletons[curSkel];
-
 		// GUI state
 		vec2i wndSize = gui.input->getWindowSize();
 
@@ -123,34 +121,28 @@ public:
 
 		Spacer(vec2i(0, 10)).run(gui, lyt);
 
-		if (Button("reset-btn", "Reset Pose").run(gui, lyt))
-		{
-			oldSkel.solver->resetPose();
-			oldSkel.targetPos = oldSkel.solver->getEffectorPos();
-			targetSpeed = 0.0;
-		}
-
-		if (Button("reset-all-btn", "Reset All").run(gui, lyt))
-		{
-			oldSkel.solver->resetAll();
-			oldSkel.targetPos = oldSkel.solver->getEffectorPos();
-			targetSpeed = 0.0;
-		}
-
-		if (Button("constraint-btn", "Apply Constraints").run(gui, lyt))
-		{
-			oldSkel.solver->applyAllConstraints();
-			oldSkel.targetPos = oldSkel.solver->getEffectorPos();
-			targetSpeed = 0.0;
-		}
-
 		Label("Skeleton:").run(gui, lyt);
-
 		ComboBox skelSel("skeleton-sel", WidgetID(curSkel));
 		for (int i = 0; i < (int)skeletons.size(); ++i)
 			skelSel.add(WidgetID(i), skeletons[i].name);
 		curSkel = skelSel.run(gui, lyt).getIndex();
 		SkeletonItem &skel = skeletons[curSkel];
+
+		Spacer(vec2i(0, 10)).run(gui, lyt);
+
+		if (Button("reset-btn", "Reset Pose").run(gui, lyt))
+		{
+			skel.solver->resetPose();
+			skel.targetPos = skel.solver->getEffectorPos();
+			targetSpeed = 0.0;
+		}
+
+		if (Button("reset-all-btn", "Reset All").run(gui, lyt))
+		{
+			skel.solver->resetAll();
+			skel.targetPos = skel.solver->getEffectorPos();
+			targetSpeed = 0.0;
+		}
 
 		showJointBasis = CheckBox("show-joint-basis-chk", "Show joint basis vectors", showJointBasis).run(gui, lyt);
 
@@ -162,6 +154,13 @@ public:
 
 		if (Button("step-btn", "Step IK", ikMode && !ikEnabled).run(gui, lyt))
 			skel.solver->iterateIk();
+
+		if (Button("constraint-btn", "Apply Constraints").run(gui, lyt))
+		{
+			skel.solver->applyAllConstraints();
+			skel.targetPos = skel.solver->getEffectorPos();
+			targetSpeed = 0.0;
+		}
 
 		Label("Root bone:").run(gui, lyt);
 		ComboBox rootSel("root-sel", WidgetID(&skel.solver->getRootBone()));
