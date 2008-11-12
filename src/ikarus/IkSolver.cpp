@@ -5,12 +5,12 @@
 
 // ===== Utilities ===========================================================
 
-quatd calcRotation(const vec3d &tip, const vec3d &target)
+mat3d calcRotation(const vec3d &tip, const vec3d &target)
 {
 	double lenSqrTip = dot(tip, tip);
-	if (lenSqrTip < 0.001) return vmath::identityq<double>();
+	if (lenSqrTip < 0.001) return mat3d(1.0);
 	double lenSqrTarget = dot(target, target);
-	if (lenSqrTarget < 0.001) return vmath::identityq<double>();
+	if (lenSqrTarget < 0.001) return mat3d(1.0);
 
 	vec3d a = tip * vmath::rsqrt(lenSqrTip);
 	vec3d b = target * vmath::rsqrt(lenSqrTarget);
@@ -33,9 +33,9 @@ quatd calcRotation(const vec3d &tip, const vec3d &target)
 
 	// early-out if the angle is small
 	if (angle < 0.001)
-		return vmath::identityq<double>();
+		return mat3d(1.0);
 
-	return quat_from_axis_angle(cross(a, b), angle);
+	return vmath::rotation_matrix3(angle, cross(a, b));
 }
 
 // ===== IkSolver ============================================================
@@ -76,8 +76,8 @@ void IkSolver::resetPose()
 	rootPos = rootBone->worldPos;
 	for (int i = 0; i < (int)skeleton.numBones(); ++i)
 	{
-		boneStates[i].bonespace = vmath::translation_matrix(skeleton[i].worldPos);
-		boneStates[i].rot = vmath::identityq<double>();
+		boneStates[i].orient = skeleton[i].defaultOrient;
+		boneStates[i].worldPos = skeleton[i].worldPos;
 	}
 }
 
@@ -102,7 +102,7 @@ vec3d IkSolver::getEffectorPos() const
 {
 	assert(effectorBone != 0);
 	const BoneState &bs = boneStates[effectorBone->id];
-	return bs.bonespace.translation();
+	return bs.worldPos;
 }
 
 void IkSolver::setTargetPos(const vec3d &target)
@@ -118,33 +118,9 @@ void IkSolver::setRootBone(const Bone &bone)
 	// clear the existing IK chain
 	ikChain.clear();
 
-	// form a chain between the old root and the new root
-	std::vector<const Bone*> chain;
-	buildChain(bone, *rootBone, chain);
-
-	// rebuild the rotation values along the chain
-	// this is required because the rotation values are specified relative to the parent bone,
-	// and the parent bone is dependent on which bone is root
-	std::vector<const Bone*>::const_iterator it = chain.begin();
-	while (it != chain.end())
-	{
-		const Bone &b = **it;
-		BoneState &bs = boneStates[b.id];
-		
-		++it;
-		if (it != chain.end())
-		{
-			const Bone &nb = **it;
-			BoneState &nbs = boneStates[nb.id];
-			bs.rot = inverse(nbs.rot);
-		}
-		else
-			bs.rot = mat_to_quat(minor(bs.bonespace));
-	}
-
 	// set the new root, and its correct position
 	rootBone = &bone;
-	rootPos = boneStates[rootBone->id].bonespace.translation();
+	rootPos = boneStates[bone.id].worldPos;
 }
 
 void IkSolver::setEffector(const Bone &bone)
@@ -155,7 +131,7 @@ void IkSolver::setEffector(const Bone &bone)
 
 void IkSolver::render(bool showJointBasis) const
 {
-	updateBoneTransforms();
+	updateBonePositions();
 	renderBone(0, *rootBone, showJointBasis);
 	renderBlob(vec3f(1.0f, 0.0f, 0.0f), rootPos);
 	renderBlob(vec3f(0.0f, 1.0f, 0.0f), targetPos);
@@ -166,7 +142,7 @@ void IkSolver::renderBone(const Bone *parent, const Bone &b, bool showJointBasis
 	const BoneState &bs = boneStates[b.id];
 
 	glPushMatrix();
-	glMultMatrixd(bs.bonespace);
+	glMultMatrixd(vmath::translation_matrix(bs.worldPos) * mat4d(bs.orient));
 	if (&b == effectorBone)
 		b.render(vec3f(1.0f, 1.0f, 0.0f));
 	else
@@ -194,7 +170,7 @@ void IkSolver::solveIk(int maxIterations, double threshold)
 		stepIk();
 
 		// need the bone transforms to be valid again afterwards for consistency
-		updateBoneTransforms();
+		updateBonePositions();
 
 		vec3d delta = getEffectorPos() - getTargetPos();
 		if (abs(dot(delta,delta)) < threshold*threshold)
@@ -211,12 +187,12 @@ void IkSolver::iterateIk()
 	stepIk();
 
 	// need the bone transforms to be valid again afterwards for consistency
-	updateBoneTransforms();
+	updateBonePositions();
 }
 
 vec3d IkSolver::stepIk()
 {
-	vec3d tip = boneStates[effectorBone->id].bonespace.translation();
+	vec3d tip = boneStates[effectorBone->id].worldPos;
 
 	std::vector<const Bone*>::iterator it = ikChain.begin();
 	// the first bone is the effector bone, so rotating it won't help; just skip it
@@ -232,150 +208,66 @@ vec3d IkSolver::stepIk()
 			const Bone &parent = **it;
 			const Bone::Connection &joint = *b.findJointWith(parent);
 
-			// the calculations are performed in bone space
-			// (otherwise the rotation produced will be wrong)
-			// luckily, the bonespace matrix is just a rigid body
-			// transform (ie, rotation and translation only)
-			// so it's relatively fast to work out its inverse
-			// (just a few dot products and some transposition)
-			// so, we work out the bonespace inverse
-			// transform the accumulated tip position and the target position into bonespace
-			// update the joint
-			// then transform the new tip position back into world space
-
-			mat4d invBonespace = vmath::fast_inverse(bs.bonespace);
-
-			vec3d tipB = transform_point(invBonespace, tip);
-			vec3d targetB = transform_point(invBonespace, targetPos);
-
-			updateJointByIk(b, joint, targetB, tipB);
-
-			tip = transform_point(bs.bonespace, tipB);
+			tip = updateJointByIk(b, joint, targetPos, tip);
 		}
 	}
 
 	return tip;
 }
 
-void IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, vec3d &tip)
+vec3d IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, const vec3d &tip)
 {
-	vec3d jointPos = joint.pos;
-	vec3d relTip = tip - jointPos;
-	vec3d relTarget = target - jointPos;
+	BoneState &bs = boneStates[b.id];
+
+	const vec3d jointPos = bs.worldPos + bs.orient*joint.pos;
+	const vec3d relTip = tip - jointPos;
+	const vec3d relTarget = target - jointPos;
 
 	// calculate the required rotation
-	quatd rot = calcRotation(relTip, relTarget);
-	if (rot == vmath::identityq<double>()) return;
+	mat3d rot = calcRotation(relTip, relTarget);
+	if (rot == mat3d(1.0)) return tip;
+
+	const vec3d tipInBoneSpace = transpose(bs.orient) * (tip - bs.worldPos);
 	
-	if (mApplyConstraints)
-		rot = applyConstraints(b, joint, rot);
-
-	if (rot == vmath::identityq<double>()) return;
-
-	// update the tip location
-	mat4d rotM = quat_to_mat4(rot);
-	tip = jointPos + transform_vector(rotM, relTip);
-
 	// update the bone state
-	BoneState &bs = boneStates[b.id];
-	bs.rot = bs.rot * rot;
+	bs.orient = rot * bs.orient;
+
+	// apply constraints to the bone's orientation	
+	if (mApplyConstraints)
+		applyConstraints(b, joint);	
+
+	return bs.worldPos + bs.orient*tipInBoneSpace;
 }
 
-quatd IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj, const quatd &rot)
+void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 {
-	BoneState &bs = boneStates[b.id];
-	const Bone &p = *bj.to;
-	BoneState &ps = boneStates[p.id];
-
-	if ((b.primaryJointIdx >= 0) && (&b.joints[b.primaryJointIdx] == &bj))
-	{
-		// p is parent of b in the original skeleton
-		// therefore, b has the constraints information
-		// the joint basis is relative to p (and stored in p)
-
-		const Bone::Connection &pj = *p.findJointWith(b);
-		mat3d M;
-
-		quatd fullRot = bs.rot * rot;
-
-		M = transpose(pj.jointToBone) * bj.jointToBone * quat_to_mat3(fullRot);
-		vec3d rotX = M * vec3d(1.0, 0.0, 0.0);
-		vec3d rotY = M * vec3d(0.0, 1.0, 0.0);
-		vec3d rotZ = M * vec3d(0.0, 0.0, 1.0);
-
-		double el, az;
-
-		// project rotY onto the joint's X/Z plane
-		vec3d projY(rotY.x, 0.0, rotY.z);
-		if (abs(dot(projY, projY)) < 0.001)
-		{
-			el = M_PI;
-			az = 0.0;
-		}
-		else
-		{
-			projY = normalize(projY);
-			double cosEl = clamp(-1.0, 1.0, dot(projY, rotY));
-			double cosAz = clamp(-1.0, 1.0, dot(projY, vec3d(1.0, 0.0, 0.0)));
-
-			el = std::acos(cosEl);
-			az = std::acos(cosAz);
-		}
-
-		mat3d elAzM = vmath::azimuth_elevation_matrix3(az, el);
-
-		mat3d invElAzM = transpose(elAzM);
-		vec3d dirX = invElAzM * rotX;
-
-		double cosTwist = clamp(-1.0, 1.0, dot(dirX, vec3d(1.0, 0.0, 0.0)));
-		double twist = std::acos(cosTwist);
-
-		const JointConstraints &cnst = b.constraints;
-		el = clamp(cnst.minElevation, cnst.maxElevation, el);
-		az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
-		twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
-
-		M = vmath::azimuth_elevation_matrix3(az, el) * minor(vmath::rotation_matrix(twist, 0.0, 1.0, 0.0));
-		M = transpose(quat_to_mat3(bs.rot)) * transpose(bj.jointToBone) * M;
-		return mat_to_quat(M);
-	}
-	else
-	{
-		assert(0);
-		// b is the parent of c in the original skeleton
-		// b has the constraints
-		return rot;
-	}
 }
 
-void IkSolver::updateBoneTransforms() const
+void IkSolver::updateBonePositions() const
 {
 	assert(rootBone != 0);
-	updateBoneTransform(0, *rootBone, vmath::translation_matrix(rootPos));
+	updateBonePositions(0, *rootBone, rootPos);
 }
 
-void IkSolver::updateBoneTransform(const Bone *parent, const Bone &b, const mat4d &basis) const
+void IkSolver::updateBonePositions(const Bone *parent, const Bone &b, const vec3d &base) const
 {
 	const BoneState &bs = boneStates[b.id];
 
-	bs.bonespace = basis * quat_to_mat4(bs.rot);
-
-	// basis is an intermediate coordinate frame, with the parent bone's orientation,
-	// but the origin at the location of the joint between b and parent
-	if (parent != 0)
+	if (parent == 0)
+		bs.worldPos = base;
+	else
 	{
-		const Bone::Connection *c = b.findJointWith(*parent);
-		assert(c != 0);
-		if (abs(dot(c->pos, c->pos) - 1.0) > 0.0001)
-			bs.bonespace = bs.bonespace * vmath::translation_matrix(- c->pos);
+		const Bone::Connection &c = *b.findJointWith(*parent);
+		bs.worldPos = base - bs.orient*c.pos;
 	}
 
 	for (int i = 0; i < (int)b.joints.size(); ++i)
 	{
 		const Bone::Connection &c = b.joints[i];
 		Bone &bn = *c.to;
+		vec3d &pos = bs.orient*c.pos;
 		if (&bn != parent)
-			updateBoneTransform(&b, bn, bs.bonespace * vmath::translation_matrix(c.pos));
+			updateBonePositions(&b, bn, bs.worldPos + pos);
 	}
 }
 

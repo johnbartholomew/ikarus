@@ -81,8 +81,8 @@ public:
 	:	camX(0), camY(1), camZ(2),
 		targetSpeed(0.0),
 		curSkel(0),
-		ikMode(false),
-		ikEnabled(false),
+		ikMode(true),
+		ikEnabled(true),
 		showJointBasis(true)
 	{
 		skeletons.push_back(new SkeletonItem("simple.skl", "Simple"));

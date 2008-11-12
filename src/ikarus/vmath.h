@@ -745,7 +745,7 @@ inline mat4<T> scaling_matrix(const vec3<T>& v)
 }
 
 template <typename T>
-inline mat4<T> rotation_matrix(const T angle, const vec3<T>& v)
+inline mat3<T> rotation_matrix3(const T angle, const vec3<T>& v)
 {
 	const vec3<T> u = normalize(v);
 	
@@ -757,8 +757,13 @@ inline mat4<T> rotation_matrix(const T angle, const vec3<T>& v)
 	
 	const mat3<T> uut = outer_product(u, u);
 	const mat3<T> R = uut + T(cos(angle)) * (identity3<T>() - uut) + T(sin(angle)) * S;
-	
-	return mat4<T>(R);
+	return R;
+}
+
+template <typename T>
+inline mat4<T> rotation_matrix(const T angle, const vec3<T> &v)
+{
+	return mat4<T>(rotation_matrix3(angle, v));
 }
 
 template <typename T> 

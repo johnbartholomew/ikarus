@@ -87,7 +87,7 @@ public:
 	struct Connection
 	{
 		explicit Connection(Bone *to, vec3d v)
-			: to(to), pos(v), jointToBone(1.0) {}
+			: to(to), pos(v) {}
 
 		// the bone that this connection goes to
 		Bone *to;
@@ -95,10 +95,6 @@ public:
 		// position of the joint in bone-space
 		// typically one joint will have a position of 0,0,0, but it's not required
 		vec3d pos;
-
-		// a matrix to take a point from joint-space to bone-space
-		// this matrix is used when applying joint constraints...
-		mat3d jointToBone;
 	};
 
 	explicit Bone(int id):
@@ -152,12 +148,16 @@ public:
 	{
 		if (primaryJointIdx >= 0 && primaryJointIdx < (int)joints.size())
 			return joints[primaryJointIdx].to;
+		else
+			return 0;
 	}
 
 	Bone *getParent()
 	{
 		if (primaryJointIdx >= 0 && primaryJointIdx < (int)joints.size())
 			return joints[primaryJointIdx].to;
+		else
+			return 0;
 	}
 
 	const Connection *findJointWith(const Bone &b) const

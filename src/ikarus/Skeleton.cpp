@@ -66,10 +66,10 @@ void Bone::renderJointCoordinates() const
 	{
 		for (int i = 0; i < (int)joints.size(); ++i)
 		{
-			if (i != primaryJointIdx)
-			{
-				const Bone::Connection &c = joints[i];
+			const Bone::Connection &c = joints[i];
 
+			if ((i != primaryJointIdx) || (c.to->isChildOf(*this)))
+			{
 				// don't bother with joints going to effectors
 				// effectors can't do anything anyway (they're just points)
 				if (c.to->isEffector()) continue;
@@ -79,9 +79,9 @@ void Bone::renderJointCoordinates() const
 				vec3d uy(0.0,  a , 0.0);
 				vec3d uz(0.0, 0.0,  a );
 
-				ux = c.pos + c.jointToBone*ux;
-				uy = c.pos + c.jointToBone*uy;
-				uz = c.pos + c.jointToBone*uz;
+				ux += c.pos;
+				uy += c.pos;
+				uz += c.pos;
 
 				glColor3f(1.0f, 0.0f, 0.0f);
 				glVertex3d(c.pos.x, c.pos.y, c.pos.z);
@@ -229,21 +229,6 @@ void Skeleton::loadFromFile(const std::string &fname)
 	}
 
 	initBoneMatrices();
-
-#if 0
-	// initialize the joint spaces
-	for (int i = 0; i < (int)roots.size(); ++i)
-	{
-		Bone &b = *roots[i];
-		if (b.primaryJointIdx >= 0)
-			initJointMatrices(*b.joints[b.primaryJointIdx].to, b);
-		else
-		{
-			for (int j = 0; j < (int)b.joints.size(); ++j)
-				initJointMatrices(b, *b.joints[j].to);
-		}
-	}
-#endif
 }
 
 void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift)
@@ -255,66 +240,6 @@ void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &s
 		if (&c != from)
 			shiftBoneWorldPositions(&b, c, shift);
 	}
-}
-
-void Skeleton::initJointMatrices(Bone &parent, Bone &child)
-{
-	// early-out for effectors (they have no length and no children of their own, so they're sort of irrelevant)
-	if (child.isEffector()) return;
-
-	Bone::Connection &pj = *parent.findJointWith(child);
-	assert(child.primaryJointIdx >= 0);
-	Bone::Connection &cj = child.joints[child.primaryJointIdx];
-
-	initJointMatrix(parent, child, pj, cj);
-
-	for (int i = 0; i < (int)child.joints.size(); ++i)
-	{
-		if (i != child.primaryJointIdx)
-			initJointMatrices(child, *child.joints[i].to);
-	}
-}
-
-void Skeleton::initJointMatrix(Bone &parent, Bone &child, Bone::Connection &pj, Bone::Connection &cj)
-{
-	vec3d out;   // (Y)
-	vec3d front; // (Z)
-	vec3d side;  // (X)
-
-	if (parent.joints.size() == 2)
-	{
-		vec3d a = parent.joints[0].pos;
-		vec3d b = parent.joints[1].pos;
-		if (parent.primaryJointIdx == 0)
-			out = normalize(b - a);
-		else
-			out = normalize(a - b);
-	}
-	else if ((parent.joints.size() > 2) && (child.joints.size() == 2))
-	{
-		vec3d a = child.joints[0].pos;
-		vec3d b = child.joints[1].pos;
-		if (child.primaryJointIdx == 0)
-			out = normalize(b - a);
-		else
-			out = normalize(a - b);
-	}
-	else
-		out = normalize(parent.displayVec);
-
-	vec3d unitZ(0.0, 0.0, 1.0);
-	vec3d unitY(0.0, 1.0, 0.0);
-	if (dot(unitZ, out) > 0.8)
-		side = cross(unitY, out);
-	else
-		side = cross(out, unitZ);
-	front = cross(side, out);
-
-	pj.jointToBone = mat3d(
-		side.x, out.x, front.x,
-		side.y, out.y, front.y,
-		side.z, out.z, front.z
-	);
 }
 
 void Skeleton::initBoneMatrices()

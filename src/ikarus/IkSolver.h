@@ -38,15 +38,13 @@ public:
 private:
 	struct BoneState
 	{
-		BoneState(): bonespace(1.0), rot(vmath::identityq<double>()) {}
-		BoneState(const vec3d &worldPos)
-			: bonespace(vmath::translation_matrix(worldPos)), rot(vmath::identityq<double>()) {}
+		BoneState(): orient(1.0), worldPos(0.0, 0.0, 0.0) {}
 
-		// nominal (relative) state values
-		quatd rot;
+		// nominal absolute orientation
+		mat3d orient;
 
-		// cached absolute transform
-		mutable mat4d bonespace;
+		// cached world-space position
+		mutable vec3d worldPos;
 	};
 
 	// an IkSolver is linked at construction with a skeleton
@@ -66,12 +64,12 @@ private:
 	void renderBone(const Bone *parent, const Bone &b, bool showJointBasis) const;
 
 	vec3d stepIk();
-	void updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, vec3d &tip);
+	vec3d updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, const vec3d &tip);
 
-	quatd applyConstraints(const Bone &b, const Bone::Connection &bj, const quatd &rot);
+	void applyConstraints(const Bone &b, const Bone::Connection &bj);
 
-	void updateBoneTransforms() const;
-	void updateBoneTransform(const Bone *parent, const Bone &b, const mat4d &basis) const;
+	void updateBonePositions() const;
+	void updateBonePositions(const Bone *parent, const Bone &b, const vec3d &base) const;
 
 	bool buildChain(const Bone &from, const Bone &to, std::vector<const Bone*> &chain) const;
 	bool buildChain(const Bone *parent, const Bone &b, const Bone &target, std::vector<const Bone*> &chain) const;
