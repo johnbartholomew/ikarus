@@ -34,17 +34,17 @@ public:
 
 	// perform one iteration of whatever IK algorithm is being implemented
 	void iterateIk();
-
+	
 private:
 	struct BoneState
 	{
-		BoneState(): orient(1.0), worldPos(0.0, 0.0, 0.0) {}
+		BoneState(): rot(1.0), boneToWorld(1.0) {}
 
-		// nominal absolute orientation
-		mat3d orient;
+		// nominal rotation relative to parent
+		mat3d rot;
 
-		// cached world-space position
-		mutable vec3d worldPos;
+		// cached world-space position & absolute orientation
+		mutable mat4d boneToWorld;
 	};
 
 	// an IkSolver is linked at construction with a skeleton
@@ -61,15 +61,14 @@ private:
 	vec3d targetPos;
 	vec3d rootPos;
 
-	void renderBone(const Bone *parent, const Bone &b, bool showJointBasis) const;
-
 	vec3d stepIk();
 	vec3d updateJointByIk(const Bone &b, const Bone::Connection &joint, const vec3d &target, const vec3d &tip);
 
 	void applyConstraints(const Bone &b, const Bone::Connection &bj);
 
-	void updateBonePositions() const;
-	void updateBonePositions(const Bone *parent, const Bone &b, const vec3d &base) const;
+	void resetBoneRot(const Bone *parent, const Bone &b);
+	void updateBoneTransforms() const;
+	void updateBoneTransforms(const Bone *parent, const Bone &b, const mat4d &base) const;
 
 	bool buildChain(const Bone &from, const Bone &to, std::vector<const Bone*> &chain) const;
 	bool buildChain(const Bone *parent, const Bone &b, const Bone &target, std::vector<const Bone*> &chain) const;

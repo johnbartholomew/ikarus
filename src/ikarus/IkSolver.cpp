@@ -74,10 +74,31 @@ void IkSolver::resetAll()
 void IkSolver::resetPose()
 {
 	rootPos = rootBone->worldPos;
+
 	for (int i = 0; i < (int)skeleton.numBones(); ++i)
 	{
-		boneStates[i].orient = skeleton[i].defaultOrient;
-		boneStates[i].worldPos = skeleton[i].worldPos;
+		const Bone &b = skeleton[i];
+		boneStates[i].boneToWorld = vmath::translation_matrix(b.worldPos) * mat4d(b.defaultOrient);
+	}
+
+	resetBoneRot(0, *rootBone);
+
+	//updateBoneTransforms();
+}
+
+void IkSolver::resetBoneRot(const Bone *parent, const Bone &b)
+{
+	BoneState &bs = boneStates[b.id];
+	if (parent != 0)
+		bs.rot = transpose(parent->defaultOrient) * b.defaultOrient;
+	else
+		bs.rot = b.defaultOrient;
+
+	for (int i = 0; i < (int)b.joints.size(); ++i)
+	{
+		const Bone::Connection &c = b.joints[i];
+		if (c.to != parent)
+			resetBoneRot(&b, *c.to);
 	}
 }
 
@@ -102,7 +123,7 @@ vec3d IkSolver::getEffectorPos() const
 {
 	assert(effectorBone != 0);
 	const BoneState &bs = boneStates[effectorBone->id];
-	return bs.worldPos;
+	return bs.boneToWorld.translation();
 }
 
 void IkSolver::setTargetPos(const vec3d &target)
@@ -118,9 +139,35 @@ void IkSolver::setRootBone(const Bone &bone)
 	// clear the existing IK chain
 	ikChain.clear();
 
+	// form a chain between the old root and the new root
+	std::vector<const Bone*> chain;
+	buildChain(bone, *rootBone, chain);
+
+	// rebuild the rotation values along the chain
+	// this is required because the rotation values are specified relative to the parent bone,
+	// and the parent bone is dependent on which bone is root
+	std::vector<const Bone*>::const_iterator it = chain.begin();
+	while (it != chain.end())
+	{
+		const Bone &b = **it;
+		BoneState &bs = boneStates[b.id];
+		
+		++it;
+		if (it != chain.end())
+		{
+			const Bone &nb = **it;
+			BoneState &nbs = boneStates[nb.id];
+			bs.rot = transpose(nbs.rot);
+		}
+		else
+			bs.rot = minor(bs.boneToWorld);
+	}
+
 	// set the new root, and its correct position
 	rootBone = &bone;
-	rootPos = boneStates[bone.id].worldPos;
+	rootPos = boneStates[bone.id].boneToWorld.translation();
+	
+	updateBoneTransforms();
 }
 
 void IkSolver::setEffector(const Bone &bone)
@@ -131,32 +178,27 @@ void IkSolver::setEffector(const Bone &bone)
 
 void IkSolver::render(bool showJointBasis) const
 {
-	updateBonePositions();
-	renderBone(0, *rootBone, showJointBasis);
+	for (int i = 0; i < skeleton.numBones(); ++i)
+	{
+		const Bone &b = skeleton[i];
+		const BoneState &bs = boneStates[i];
+
+		glPushMatrix();
+		glMultMatrixd(bs.boneToWorld);
+
+		if (&b == effectorBone)
+			b.render(vec3f(1.0f, 1.0f, 0.0f));
+		else
+			b.render(vec3f(1.0f, 1.0f, 1.0f));
+
+		if (showJointBasis && !b.isEffector())
+			b.renderJointCoordinates();
+
+		glPopMatrix();
+	}
+
 	renderBlob(vec3f(1.0f, 0.0f, 0.0f), rootPos);
 	renderBlob(vec3f(0.0f, 1.0f, 0.0f), targetPos);
-}
-
-void IkSolver::renderBone(const Bone *parent, const Bone &b, bool showJointBasis) const
-{
-	const BoneState &bs = boneStates[b.id];
-
-	glPushMatrix();
-	glMultMatrixd(vmath::translation_matrix(bs.worldPos) * mat4d(bs.orient));
-	if (&b == effectorBone)
-		b.render(vec3f(1.0f, 1.0f, 0.0f));
-	else
-		b.render(vec3f(1.0f, 1.0f, 1.0f));
-	if (showJointBasis && !b.isEffector())
-		b.renderJointCoordinates();
-	glPopMatrix();
-
-	for (int i = 0; i < (int)b.joints.size(); ++i)
-	{
-		const Bone &bn = *b.joints[i].to;
-		if (&bn != parent)
-			renderBone(&b, bn, showJointBasis);
-	}
 }
 
 void IkSolver::solveIk(int maxIterations, double threshold)
@@ -170,7 +212,7 @@ void IkSolver::solveIk(int maxIterations, double threshold)
 		stepIk();
 
 		// need the bone transforms to be valid again afterwards for consistency
-		updateBonePositions();
+		updateBoneTransforms();
 
 		vec3d delta = getEffectorPos() - getTargetPos();
 		if (abs(dot(delta,delta)) < threshold*threshold)
@@ -187,12 +229,12 @@ void IkSolver::iterateIk()
 	stepIk();
 
 	// need the bone transforms to be valid again afterwards for consistency
-	updateBonePositions();
+	updateBoneTransforms();
 }
 
 vec3d IkSolver::stepIk()
 {
-	vec3d tip = boneStates[effectorBone->id].worldPos;
+	vec3d tip = boneStates[effectorBone->id].boneToWorld.translation();
 
 	std::vector<const Bone*>::iterator it = ikChain.begin();
 	// the first bone is the effector bone, so rotating it won't help; just skip it
@@ -208,7 +250,14 @@ vec3d IkSolver::stepIk()
 			const Bone &parent = **it;
 			const Bone::Connection &joint = *b.findJointWith(parent);
 
-			tip = updateJointByIk(b, joint, targetPos, tip);
+			const mat4d worldToBone = vmath::fast_inverse(bs.boneToWorld);
+			
+			vec3d targetB = transform_point(worldToBone, targetPos);
+			vec3d tipB = transform_point(worldToBone, tip);
+
+			tipB = updateJointByIk(b, joint, targetB, tipB);
+
+			tip = transform_point(bs.boneToWorld, tipB);
 		}
 	}
 
@@ -219,55 +268,55 @@ vec3d IkSolver::updateJointByIk(const Bone &b, const Bone::Connection &joint, co
 {
 	BoneState &bs = boneStates[b.id];
 
-	const vec3d jointPos = bs.worldPos + bs.orient*joint.pos;
-	const vec3d relTip = tip - jointPos;
-	const vec3d relTarget = target - jointPos;
+	const vec3d relTip = tip - joint.pos;
+	const vec3d relTarget = target - joint.pos;
 
 	// calculate the required rotation
 	mat3d rot = calcRotation(relTip, relTarget);
 	if (rot == mat3d(1.0)) return tip;
-
-	const vec3d tipInBoneSpace = transpose(bs.orient) * (tip - bs.worldPos);
 	
-	// update the bone state
-	bs.orient = rot * bs.orient;
-
 	// apply constraints to the bone's orientation	
 	if (mApplyConstraints)
-		applyConstraints(b, joint);	
+	{
+		mat3d oldRot = bs.rot;
+		bs.rot = bs.rot * rot;
+		applyConstraints(b, joint);
+		rot = transpose(oldRot) * bs.rot;
+	}
+	else // alternatively, just apply the rotation directly
+		bs.rot = bs.rot * rot;
 
-	return bs.worldPos + bs.orient*tipInBoneSpace;
+	return joint.pos + rot*relTip;
 }
 
 void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 {
 }
 
-void IkSolver::updateBonePositions() const
+void IkSolver::updateBoneTransforms() const
 {
 	assert(rootBone != 0);
-	updateBonePositions(0, *rootBone, rootPos);
+	updateBoneTransforms(0, *rootBone, vmath::translation_matrix(rootPos));
 }
 
-void IkSolver::updateBonePositions(const Bone *parent, const Bone &b, const vec3d &base) const
+void IkSolver::updateBoneTransforms(const Bone *parent, const Bone &b, const mat4d &base) const
 {
 	const BoneState &bs = boneStates[b.id];
 
 	if (parent == 0)
-		bs.worldPos = base;
+		bs.boneToWorld = base * mat4d(bs.rot);
 	else
 	{
 		const Bone::Connection &c = *b.findJointWith(*parent);
-		bs.worldPos = base - bs.orient*c.pos;
+		bs.boneToWorld = base * mat4d(bs.rot) * vmath::translation_matrix(-c.pos);
 	}
 
 	for (int i = 0; i < (int)b.joints.size(); ++i)
 	{
 		const Bone::Connection &c = b.joints[i];
 		Bone &bn = *c.to;
-		vec3d &pos = bs.orient*c.pos;
 		if (&bn != parent)
-			updateBonePositions(&b, bn, bs.worldPos + pos);
+			updateBoneTransforms(&b, bn, bs.boneToWorld * vmath::translation_matrix(c.pos));
 	}
 }
 
