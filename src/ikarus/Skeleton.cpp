@@ -85,7 +85,7 @@ void Bone::renderJointCoordinates() const
 		{
 			const Bone::Connection &c = joints[i];
 
-			if ((i != primaryJointIdx) || (c.to->isChildOf(*this)))
+			if (c.to->isChildOf(*this))
 			{
 				// don't bother with joints going to effectors
 				// effectors can't do anything anyway (they're just points)
@@ -159,7 +159,7 @@ void Bone::renderJointConstraints(const mat3d &boneToParent) const
 	{
 		const Bone::Connection &c = joints[i];
 
-		if ((i != primaryJointIdx) || (c.to->isChildOf(*this)))
+		if (c.to->isChildOf(*this))
 		{
 			// don't bother with joints going to effectors
 			// effectors can't do anything anyway (they're just points)
