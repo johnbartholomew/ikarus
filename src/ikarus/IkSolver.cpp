@@ -332,6 +332,29 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 		twist = -twist;
 
 	const JointConstraints &cnst = b.constraints;
+
+	/*
+	if ((az < cnst.minAzimuth) || (az > cnst.maxAzimuth))
+	{
+		vec3d dirOnXZ(dir.x, 0.0, dir.z);
+		if (length_squared(dirOnXZ) < 0.00001)
+			az = (cnst.minAzimuth + cnst.maxAzimuth) / 2.0;
+		else
+		{
+			dirOnXZ = normalize(dirOnXZ);
+
+			const vec3d minAzDir(sin(cnst.minAzimuth), 0.0, cos(cnst.minAzimuth));
+			const vec3d maxAzDir(sin(cnst.maxAzimuth), 0.0, cos(cnst.maxAzimuth));
+			if (dot(dirOnXZ, minAzDir) < dot(dirOnXZ, maxAzDir))
+				az = cnst.minAzimuth;
+			else
+				az = cnst.maxAzimuth;
+		}
+	}
+	
+	vec3d dirOnAz;
+	*/
+
 	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
 	el = clamp(cnst.minElevation, cnst.maxElevation, el);
 	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
