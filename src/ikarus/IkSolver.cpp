@@ -435,7 +435,7 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 		az = 0.0;
 	else
 	{
-		vec3d dirOnPlane(dir.x, 0.0, dir.y);
+		vec3d dirOnPlane(dir.x, 0.0, dir.z);
 		dirOnPlane = normalize(dirOnPlane);
 
 		d = clamp(-1.0, 1.0, dot(dirOnPlane, unitZ));
