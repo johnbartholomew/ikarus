@@ -127,6 +127,10 @@ public:
 		for (int i = 0; i < (int)skeletons.size(); ++i)
 			skelSel.add(WidgetID(i), skeletons[i].name);
 		curSkel = skelSel.run(gui, lyt).getIndex();
+
+		if (Button("reload-btn", "Reload").run(gui, lyt))
+			skeletons.reset_at(curSkel, new SkeletonItem(skeletons[curSkel].fname, skeletons[curSkel].name));
+		
 		SkeletonItem &skel = skeletons[curSkel];
 
 		Spacer(vec2i(0, 10)).run(gui, lyt);
@@ -260,7 +264,7 @@ private:
 	struct SkeletonItem
 	{
 		SkeletonItem(const std::string &fname, const std::string &name)
-			:	name(name)
+			:	name(name), fname(fname)
 		{
 			skeleton.loadFromFile(fname.c_str());
 			solver.reset(new IkSolver(skeleton));
@@ -271,6 +275,7 @@ private:
 		ScopedPtr<IkSolver> solver;
 		vec3d targetPos;
 		std::string name;
+		std::string fname;
 	};
 
 	CameraAzimuthElevation camPerspective;
