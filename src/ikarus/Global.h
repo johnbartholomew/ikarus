@@ -89,6 +89,10 @@ typedef vmath::mat4<double> mat4d;
 
 typedef vmath::quat<double> quatd;
 
+static const vec3d unitX(1.0, 0.0, 0.0);
+static const vec3d unitY(0.0, 1.0, 0.0);
+static const vec3d unitZ(0.0, 0.0, 1.0);
+
 // ===== Utility Functions =====
 
 template <typename T>

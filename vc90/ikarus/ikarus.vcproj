@@ -204,6 +204,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\ikarus\MathUtil.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ikarus\OpenGLContext.cpp"
 				>
 			</File>
@@ -295,6 +299,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\ikarus\IkSolver.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ikarus\MathUtil.h"
 				>
 			</File>
 			<File

@@ -1,6 +1,7 @@
 #include "Global.h"
 #include "Skeleton.h"
 #include "GfxUtil.h"
+#include "MathUtil.h"
 
 // ===== Bone ================================================================
 
@@ -13,10 +14,6 @@ void Bone::render(const vec3f &col) const
 		const double len = length(displayVec);
 		const double offset = 0.1 * len;
 		const double invSqrt2 = 0.70710678118654746;
-		
-		const vec3d unitX(1.0, 0.0, 0.0);
-		const vec3d unitY(0.0, 1.0, 0.0);
-		const vec3d unitZ(0.0, 0.0, 1.0);
 
 		const vec3d dir(normalize(displayVec));
 
@@ -401,10 +398,6 @@ void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone)
 	}
 	else
 		along = normalize(bone.displayVec);
-
-	vec3d unitX(1.0, 0.0, 0.0);
-	vec3d unitY(0.0, 1.0, 0.0);
-	vec3d unitZ(0.0, 0.0, 1.0);
 
 	double dotAlongX = dot(along, unitX);
 	if (dotAlongX < -0.8)
