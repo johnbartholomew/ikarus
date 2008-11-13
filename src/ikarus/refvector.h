@@ -126,6 +126,13 @@ public:
 	iterator end()
 	{ return iterator(mItems.end()); }
 
+	template <typename Y>
+	iterator insert(iterator pos, Y * const y)
+	{
+		assert(y != 0);
+		iterator(mItems.insert(pos, y));
+	}
+
 	iterator erase(iterator it)
 	{
 		delete (&(*it));
@@ -177,6 +184,15 @@ public:
 
 	reference operator[](size_type idx)
 	{ return *(mItems[idx]); }
+
+	template <typename Y>
+	void reset_at(size_type idx, Y * const y)
+	{
+		assert(y != 0);
+		T *tmp = mItems[idx];
+		mItems[idx] = y;
+		delete tmp;
+	}
 
 	void reserve(size_type n)
 	{ mItems.reserve(n); }
