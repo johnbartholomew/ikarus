@@ -314,22 +314,22 @@ template <typename T> inline vec3<T> cross(const vec3<T>& u, const vec3<T>& v)
 
 
 #define MATRIX_COL4(SRC, C) \
-	vec4<T>(SRC.elem[C][0], SRC.elem[C][1], SRC.elem[C][2], SRC.elem[C][3])
+	vec4<T>((SRC).elem[C][0], (SRC).elem[C][1], (SRC).elem[C][2], (SRC).elem[C][3])
 
 #define MATRIX_ROW4(SRC, R) \
-	vec4<T>(SRC.elem[0][R], SRC.elem[1][R], SRC.elem[2][R], SRC.elem[3][R])
+	vec4<T>((SRC).elem[0][R], (SRC).elem[1][R], (SRC).elem[2][R], (SRC).elem[3][R])
 
 #define MATRIX_COL3(SRC, C) \
-	vec3<T>(SRC.elem[C][0], SRC.elem[C][1], SRC.elem[C][2])
+	vec3<T>((SRC).elem[C][0], (SRC).elem[C][1], (SRC).elem[C][2])
 
 #define MATRIX_ROW3(SRC, R) \
-	vec3<T>(SRC.elem[0][R], SRC.elem[1][R], SRC.elem[2][R])
+	vec3<T>((SRC).elem[0][R], (SRC).elem[1][R], (SRC).elem[2][R])
 
 #define MATRIX_COL2(SRC, C) \
-	vec2<T>(SRC.elem[C][0], SRC.elem[C][1])
+	vec2<T>((SRC).elem[C][0], (SRC).elem[C][1])
 
 #define MATRIX_ROW2(SRC, R) \
-	vec2<T>(SRC.elem[0][R], SRC.elem[1][R])
+	vec2<T>((SRC).elem[0][R], (SRC).elem[1][R])
 
 #define MOP_M_MATRIX_MULTIPLY(CLASS, SIZE) \
 	CLASS & operator *= (const CLASS & rhs) \
@@ -437,6 +437,24 @@ struct mat3 {
 	}
 
 	explicit mat3(const mat4<T>& m);
+
+	bool isrotation() const
+	{
+		bool isrot = true;
+		const vec3<T> v0(MATRIX_COL3(*this, 0));
+		const vec3<T> v1(MATRIX_COL3(*this, 1));
+		const vec3<T> v2(MATRIX_COL3(*this, 2));
+
+		isrot = isrot && (abs(dot(v0, v1)) < 0.00001);
+		isrot = isrot && (abs(dot(v1, v2)) < 0.00001);
+		isrot = isrot && (abs(dot(v2, v0)) < 0.00001);
+
+		isrot = isrot && v0.isnormalized();
+		isrot = isrot && v1.isnormalized();
+		isrot = isrot && v2.isnormalized();
+
+		return isrot;
+	}
 
 	MATRIX_CONSTRUCTOR_FROM_LOWER(mat3, mat2, 3, 2)
 	MATRIX_COMMON(mat3, 3)

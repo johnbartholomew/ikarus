@@ -82,7 +82,7 @@ void renderBox(const vec3f &bgCol, const vec3f &borderCol, const recti &rect, in
 
 void arcPoints(const vec3d &centre, const vec3d &normal, const vec3d &zeroDir, double radius, double startAngle, double endAngle)
 {
-	assert(dot(normal, zeroDir) == 0.0);
+	assert(abs(dot(normal, zeroDir)) < 0.00001);
 	vec3d side = cross(normal, zeroDir);
 
 	mat3d orient(
