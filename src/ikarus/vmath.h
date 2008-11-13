@@ -257,9 +257,14 @@ template <typename T> inline vec3<T>::vec3(const vec4<T>& v) : x(v.x), y(v.y), z
 		return multiply_accumulate(COUNT, a, b); \
 	} \
 	template <typename T> \
+	inline T length_squared(const CLASS & v) \
+	{ \
+		return dot(v, v); \
+	} \
+	template <typename T> \
 	inline T length(const CLASS & v) \
 	{ \
-		return sqrt(dot(v, v)); \
+		return sqrt(length_squared(v)); \
 	} \
 	template <typename T> inline CLASS normalize(const CLASS & v) \
 	{ \
