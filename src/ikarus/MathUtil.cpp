@@ -53,6 +53,13 @@ mat3d calcDirectRotation(const vec3d &tip, const vec3d &target)
 
 mat3d rotationFromAzElTwist(double az, double el, double twist)
 {
+	vec3d axis(cos(az), 0.0, -sin(az));
+	return vmath::rotation_matrix3(el, axis) * vmath::rotation_matrix3(twist, unitY);
+}
+
+/*
+mat3d rotationFromAzElTwist(double az, double el, double twist)
+{
 	const double caz = cos(az);
 	const double saz = sin(az);
 	const double cel = cos(el);
@@ -83,6 +90,7 @@ mat3d rotationFromAzElTwist(double az, double el, double twist)
 
 	return M * vmath::rotation_matrix3(twist, vec3d(0.0, 1.0, 0.0));
 }
+*/
 
 void testAzElRotation()
 {
@@ -124,7 +132,7 @@ void directionToAzimuthElevation(const vec3d &dir, double &az, double &el)
 	double d = clamp(-1.0, 1.0, v.y);
 	el = std::acos(d);
 
-	if (abs(d) > 0.99)
+	if (abs(d) == 1.0)
 		az = 0.0;
 	else
 	{

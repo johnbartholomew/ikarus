@@ -56,8 +56,8 @@ void Bone::render(const vec3f &col) const
 	}
 }
 
-#define RENDER_BONE_COORDS 0
-#define RENDER_JOINT_COORDS 1
+#define RENDER_BONE_COORDS  1
+#define RENDER_JOINT_COORDS 0
 
 void Bone::renderJointCoordinates() const
 {
@@ -383,41 +383,32 @@ void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone)
 	// early-out for effectors (they keep the identity matrix)
 	if (bone.isEffector()) return;
 
-	vec3d along; // (Y)
-	vec3d front; // (Z)
-	vec3d side;  // (X)
+	vec3d dir;
 
 	if (bone.joints.size() == 2)
 	{
 		vec3d a = bone.joints[0].pos;
 		vec3d b = bone.joints[1].pos;
 		if (bone.primaryJointIdx == 0)
-			along = normalize(b - a);
+			dir = normalize(b - a);
 		else
-			along = normalize(a - b);
+			dir = normalize(a - b);
 	}
 	else
-		along = normalize(bone.displayVec);
+	{
+		// early-out if the bone has zero length
+		if (length_squared(bone.displayVec) < 0.0001)
+			return;
+		dir = normalize(bone.displayVec);
+	}
 
-	double dotAlongX = dot(along, unitX);
-	if (dotAlongX < -0.8)
-		front = normalize(cross(unitY, along));
-	else if (dotAlongX > 0.8)
-		front = normalize(cross(along, unitY));
-	else
-		front = normalize(cross(unitX, along));
-	side = cross(along, front);
+	if (parent != 0)
+		dir = transpose(parent->defaultOrient) * dir;
 
-	// sanity check
-	assert(along.isnormalized());
-	assert(front.isnormalized());
-	assert(side.isnormalized());
+	bone.defaultOrient = calcDirectRotation(unitY, dir);
 
-	bone.defaultOrient = mat3d(
-		side.x, along.x, front.x,
-		side.y, along.y, front.y,
-		side.z, along.z, front.z
-	);
+	if (parent != 0)
+		bone.defaultOrient = parent->defaultOrient * bone.defaultOrient;
 
 	mat3d invOrient = transpose(bone.defaultOrient);
 	for (int i = 0; i < (int)bone.joints.size(); ++i)
@@ -434,6 +425,7 @@ void Skeleton::initBoneMatrix(const Bone *parent, Bone &bone)
 			initBoneMatrix(&bone, *c.to);
 	}
 }
+
 
 void Skeleton::render(bool showJointBasis, bool showJointConstraints) const
 {

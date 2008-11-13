@@ -306,14 +306,25 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 
 	// Y is the direction vector, X & Z give twist
 	vec3d dir = rot*unitY;
+	mat3d simpleM = calcDirectRotation(unitY, dir);
+	mat3d twistM = transpose(simpleM) * rot;
 
+	// calculate azimuth & elevation
 	directionToAzimuthElevation(dir, az, el);
 
-	mat3d azElM = rotationFromAzElTwist(az, el, 0.0);
-	vec3d i = rot*unitX;
-	vec3d i0 = azElM*unitX;
-	d = clamp(-1.0, 1.0, dot(i, i0));
+	// calculate twist
+	// vec3d tZ = twistM*unitZ;
+	vec3d tZ = vec3d(twistM.elem[2][0], twistM.elem[2][1], twistM.elem[2][2]);
+	
+	// sanity check
+	assert(abs(tZ.y) < 0.00001);
+	assert(abs(length_squared(tZ) - 1.0) < 0.00001);
+
+	// calculate the twist...
+	d = clamp(-1.0, 1.0, tZ.z);
 	twist = std::acos(d);
+	if (tZ.x < 0.0)
+		twist = -twist;
 
 	/*
 	const JointConstraints &cnst = b.constraints;
