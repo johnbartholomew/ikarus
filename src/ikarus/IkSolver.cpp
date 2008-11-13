@@ -55,6 +55,75 @@ mat3d calcRotation(const vec3d &tip, const vec3d &target)
 	return vmath::rotation_matrix3(angle, axis);
 }
 
+mat3d rotationFromAzElTwist(double az, double el, double twist)
+{
+	const double caz = cos(az);
+	const double saz = sin(az);
+	const double cel = cos(el);
+	const double sel = sin(el);
+
+	// elevation * azimuth
+
+	mat3d azM(
+		caz, 0.0, saz,
+		0.0, 1.0, 0.0,
+		-saz, 0.0, caz
+	);
+	mat3d elM(
+		1.0, 0.0, 0.0,
+		0.0, cel, -sel,
+		0.0, sel, cel
+	);
+
+	mat3d M = azM*elM;
+
+#if 0
+	mat3d M(
+		   caz  ,  0.0,    saz  ,
+		-saz*sel,  cel,  sel*caz,
+		-saz*cel, -sel,  cel*caz
+	);
+#endif
+
+	return M * vmath::rotation_matrix3(twist, vec3d(0.0, 1.0, 0.0));
+}
+
+void testAzElRotation()
+{
+	mat3d M;
+	const vec3d unitX(1.0, 0.0, 0.0);
+	const vec3d unitY(0.0, 1.0, 0.0);
+	const vec3d unitZ(0.0, 0.0, 1.0);
+
+	vec3d x, y, z;
+
+	const double threshold = 0.000001;
+
+	M = rotationFromAzElTwist(0.0, 0.0, 0.0);
+	x = M*unitX; y = M*unitY; z = M*unitZ;
+	assert(length_squared(unitX - x) < threshold);
+	assert(length_squared(unitY - y) < threshold);
+	assert(length_squared(unitZ - z) < threshold);
+
+	M = rotationFromAzElTwist(0.0, M_PI/2.0, 0.0);
+	x = M*unitX; y = M*unitY; z = M*unitZ;
+	assert(length_squared(unitX - x) < threshold);
+	assert(length_squared(unitZ - y) < threshold);
+	assert(length_squared(-unitY - z) < threshold);
+
+	M = rotationFromAzElTwist(M_PI, M_PI/2.0, 0.0);
+	x = M*unitX; y = M*unitY; z = M*unitZ;
+	assert(length_squared(-unitX - x) < threshold);
+	assert(length_squared(-unitZ - y) < threshold);
+	assert(length_squared(-unitY - z) < threshold);
+
+	M = rotationFromAzElTwist(M_PI, M_PI, 0.0);
+	x = M*unitX; y = M*unitY; z = M*unitZ;
+	assert(length_squared(-unitX - x) < threshold);
+	assert(length_squared(-unitY - y) < threshold);
+	assert(length_squared(unitZ - z) < threshold);
+}
+
 // ===== IkSolver ============================================================
 
 IkSolver::IkSolver(const Skeleton &skel)
@@ -191,6 +260,16 @@ void IkSolver::setEffector(const Bone &bone)
 {
 	effectorBone = &bone;
 	ikChain.clear();
+}
+
+bool IkSolver::areConstraintsEnabled() const
+{
+	return mApplyConstraints;
+}
+
+void IkSolver::enableConstraints(bool enabled)
+{
+	mApplyConstraints = enabled;
 }
 
 void IkSolver::render(bool showJointBasis, bool showJointConstraints) const
@@ -335,6 +414,8 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 	// FIXME: need to handle this case
 	if (bj.to != b.getParent()) return;
 
+	//testAzElRotation();
+
 	BoneState &bs = boneStates[b.id];
 	const mat3d &rot = bs.rot;
 
@@ -347,7 +428,7 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 	// Y is the direction vector, X & Z give twist
 	vec3d dir = rot*unitY;
 
-	d = clamp(-1.0, 1.0, dot(dir, unitY));
+	d = clamp(-1.0, 1.0, dir.y);
 	el = std::acos(d);
 
 	if (abs(d) > 0.99)
@@ -359,9 +440,11 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 
 		d = clamp(-1.0, 1.0, dot(dirOnPlane, unitZ));
 		az = std::acos(d);
+		if (dirOnPlane.x < 0.0)
+			az = -az;
 	}
 
-	mat3d azElM = vmath::azimuth_elevation_matrix3(az, el);
+	mat3d azElM = rotationFromAzElTwist(az, el, 0.0);
 	vec3d i = rot*unitX;
 	vec3d i0 = azElM*unitX;
 	d = clamp(-1.0, 1.0, dot(i, i0));
@@ -372,7 +455,7 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 	el = clamp(cnst.minElevation, cnst.maxElevation, el);
 	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
 
-	bs.rot = vmath::azimuth_elevation_matrix3(az, el) * vmath::rotation_matrix3(twist, unitY);
+	bs.rot = rotationFromAzElTwist(az, el, twist);
 }
 
 void IkSolver::updateBoneTransforms() const

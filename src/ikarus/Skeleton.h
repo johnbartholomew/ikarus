@@ -10,6 +10,7 @@ public:
 	enum JointType
 	{
 		Fixed,  // a fixed joint doesn't allow any rotation
+		Custom,
 		Ball,   // a ball and socket joint allows reorientation, with twist
 		Saddle, // a ball and socket joint allows reorientation, but no twist
 		Hinge,  // a hinge joint only allows changes in elevation (eg, knee)

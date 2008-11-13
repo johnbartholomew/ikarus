@@ -61,9 +61,24 @@ void Bone::render(const vec3f &col) const
 
 void Bone::renderJointCoordinates() const
 {
+	const double a = 0.75; // FIXME: shouldn't be hardcoded
+
 	// render joint coordinate spaces
 	glBegin(GL_LINES);
 	{
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glVertex3d(0.0, 0.0, 0.0);
+		glVertex3d(a, 0.0, 0.0);
+
+		glColor3f(0.0f, 1.0f, 0.0f);
+		glVertex3d(0.0, 0.0, 0.0);
+		glVertex3d(0.0, a, 0.0);
+
+		glColor3f(0.0f, 0.0f, 1.0f);
+		glVertex3d(0.0, 0.0, 0.0);
+		glVertex3d(0.0, 0.0, a);
+
+#if 0
 		for (int i = 0; i < (int)joints.size(); ++i)
 		{
 			const Bone::Connection &c = joints[i];
@@ -74,7 +89,6 @@ void Bone::renderJointCoordinates() const
 				// effectors can't do anything anyway (they're just points)
 				if (c.to->isEffector()) continue;
 
-				double a = 0.75; // FIXME: shouldn't be constant
 				vec3d ux( a , 0.0, 0.0);
 				vec3d uy(0.0,  a , 0.0);
 				vec3d uz(0.0, 0.0,  a );
@@ -96,6 +110,7 @@ void Bone::renderJointCoordinates() const
 				glVertex3d(uz.x, uz.y, uz.z);
 			}
 		}
+#endif
 	}
 	glEnd();
 }
@@ -105,6 +120,7 @@ void Bone::renderJointConstraints() const
 	const double radius = 0.75;
 
 	// render joint constraints with the parent bone
+	// twist is constrained in bone-space
 	if ((primaryJointIdx >= 0) && (constraints.minTwist < constraints.maxTwist))
 	{
 		glColor3f(1.0f, 0.0f, 0.0f);
@@ -121,6 +137,7 @@ void Bone::renderJointConstraints() const
 	}
 
 	// render joint constraints for joints with child bones
+	// azimuth & elevation are constrained in the parent bone-space
 	for (int i = 0; i < (int)joints.size(); ++i)
 	{
 		const Bone::Connection &c = joints[i];
@@ -134,6 +151,8 @@ void Bone::renderJointConstraints() const
 			const Bone &child = *c.to;
 			const JointConstraints &cnst = child.constraints;
 
+			// draw the real azimuth range
+			glLineWidth(1.25f);
 			glColor3f(0.0f, 1.0f, 0.0f);
 			glBegin(GL_LINE_STRIP);
 			arcPoints(
@@ -146,8 +165,31 @@ void Bone::renderJointConstraints() const
 			);
 			glEnd();
 
-			glColor3f(0.0f, 0.0f, 1.0f);
+			if (cnst.minAzimuth >= cnst.maxAzimuth)
+			{
+				double a = cnst.minAzimuth;
+				glPointSize(3.5f);
+				glBegin(GL_POINTS);
+				glVertex3d(c.pos.x + radius*sin(a), c.pos.y, c.pos.z + radius*cos(a));
+				glEnd();
+			}
 
+			// draw the rest of the azimuth range in a fainter green
+			// so that it's possible to see where the joint plane is when the azimuth is fixed
+			glLineWidth(0.75f);
+			glColor3f(0.2f, 0.5f, 0.2f);
+			glBegin(GL_LINE_STRIP);
+			arcPoints(
+				c.pos,
+				vec3d(0.0, 1.0, 0.0),
+				vec3d(0.0, 0.0, 1.0),
+				radius,
+				cnst.maxAzimuth,
+				cnst.minAzimuth+(2.0*M_PI)
+			);
+			glEnd();
+
+			glColor3f(0.0f, 0.0f, 1.0f);
 			double range = cnst.maxAzimuth - cnst.minAzimuth;
 			int N = 1 + (int)(range / (M_PI/6.0));
 			for (int i = 0; i <= N; ++i)
@@ -157,7 +199,7 @@ void Bone::renderJointConstraints() const
 				glBegin(GL_LINE_STRIP);
 				arcPoints(
 					c.pos,
-					vec3d(sin(a), 0.0, cos(a)),
+					vec3d(cos(a), 0.0, -sin(a)),
 					vec3d(0.0, 1.0, 0.0),
 					radius,
 					cnst.minElevation,
@@ -224,6 +266,20 @@ void Skeleton::loadFromFile(const std::string &fname)
 				b.constraints = JointConstraints(JointConstraints::Hinge);
 			else if (jointType == "pivot")
 				b.constraints = JointConstraints(JointConstraints::Pivot);
+			else if (jointType == "custom")
+			{
+				b.constraints.type = JointConstraints::Custom;
+				ss
+					>> b.constraints.minAzimuth >> b.constraints.maxAzimuth
+					>> b.constraints.minElevation >> b.constraints.maxElevation
+					>> b.constraints.minTwist >> b.constraints.maxTwist;
+				b.constraints.minAzimuth *= M_PI/180.0;
+				b.constraints.maxAzimuth *= M_PI/180.0;
+				b.constraints.minElevation *= M_PI/180.0;
+				b.constraints.maxElevation *= M_PI/180.0;
+				b.constraints.minTwist *= M_PI/180.0;
+				b.constraints.maxTwist *= M_PI/180.0;
+			}
 
 			// ignore the root bone itself...
 			if (parentId >= 0)

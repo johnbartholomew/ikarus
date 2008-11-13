@@ -150,6 +150,8 @@ public:
 
 		ikMode = CheckBox("ik-mode-chk", "IK Mode", ikMode).run(gui, lyt);
 		ikEnabled = CheckBox("ik-enabled-chk", "IK Enabled", ikEnabled, ikMode).run(gui, lyt);
+		bool constraintsOn = CheckBox("ik-constrained-chk", "Enable Constraints", skel.solver->areConstraintsEnabled(), ikMode).run(gui, lyt);
+		skel.solver->enableConstraints(constraintsOn);
 
 		if (Button("solve-btn", "Solve", ikMode && !ikEnabled).run(gui, lyt))
 			skel.solver->solveIk(30);
@@ -157,7 +159,7 @@ public:
 		if (Button("step-btn", "Step IK", ikMode && !ikEnabled).run(gui, lyt))
 			skel.solver->iterateIk();
 
-		if (Button("constraint-btn", "Apply Constraints").run(gui, lyt))
+		if (Button("constraint-btn", "Apply Constraints", ikMode).run(gui, lyt))
 		{
 			skel.solver->applyAllConstraints();
 			skel.targetPos = skel.solver->getEffectorPos();

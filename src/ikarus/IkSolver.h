@@ -20,6 +20,9 @@ public:
 	void setRootBone(const Bone &bone);
 	void setEffector(const Bone &bone);
 
+	bool areConstraintsEnabled() const;
+	void enableConstraints(bool enabled = true);
+
 	// resets the root bone, effector and target position
 	void resetAll();
 
