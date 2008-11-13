@@ -59,6 +59,9 @@ void Bone::render(const vec3f &col) const
 	}
 }
 
+#define RENDER_BONE_COORDS 0
+#define RENDER_JOINT_COORDS 1
+
 void Bone::renderJointCoordinates() const
 {
 	const double a = 0.75; // FIXME: shouldn't be hardcoded
@@ -66,6 +69,7 @@ void Bone::renderJointCoordinates() const
 	// render joint coordinate spaces
 	glBegin(GL_LINES);
 	{
+#if RENDER_BONE_COORDS
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glVertex3d(0.0, 0.0, 0.0);
 		glVertex3d(a, 0.0, 0.0);
@@ -77,8 +81,9 @@ void Bone::renderJointCoordinates() const
 		glColor3f(0.0f, 0.0f, 1.0f);
 		glVertex3d(0.0, 0.0, 0.0);
 		glVertex3d(0.0, 0.0, a);
+#endif
 
-#if 0
+#if RENDER_JOINT_COORDS
 		for (int i = 0; i < (int)joints.size(); ++i)
 		{
 			const Bone::Connection &c = joints[i];
@@ -234,6 +239,10 @@ void Skeleton::loadFromFile(const std::string &fname)
 		std::istringstream ss(ln);
 		std::string cmd;
 		ss >> cmd;
+
+		// skip comments (comments start with %)
+		if ((cmd.size() > 0) && (cmd[0] == '%'))
+			continue;
 
 		if (cmd == "bonecount")
 		{
