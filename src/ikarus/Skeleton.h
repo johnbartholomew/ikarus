@@ -193,7 +193,7 @@ public:
 	// expects the matrices to be set up to put vertices in bone-space
 	void render(const vec3f &col) const;
 	void renderJointCoordinates() const;
-	void renderJointConstraints() const;
+	void renderJointConstraints(const mat3d &boneToParent) const;
 };
 
 class Skeleton : public RefCounted

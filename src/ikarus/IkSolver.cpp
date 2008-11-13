@@ -171,7 +171,7 @@ void IkSolver::render(bool showJointBasis, bool showJointConstraints) const
 			b.renderJointCoordinates();
 		
 		if (showJointConstraints && !b.isEffector())
-			b.renderJointConstraints();
+			b.renderJointConstraints(bs.rot);
 
 		glPopMatrix();
 	}
@@ -326,12 +326,10 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 	if (tZ.x < 0.0)
 		twist = -twist;
 
-	/*
 	const JointConstraints &cnst = b.constraints;
 	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
 	el = clamp(cnst.minElevation, cnst.maxElevation, el);
 	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
-	*/
 
 	bs.rot = rotationFromAzElTwist(az, el, twist);
 }

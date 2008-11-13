@@ -56,8 +56,8 @@ void Bone::render(const vec3f &col) const
 	}
 }
 
-#define RENDER_BONE_COORDS  1
-#define RENDER_JOINT_COORDS 0
+#define RENDER_BONE_COORDS  0
+#define RENDER_JOINT_COORDS 1
 
 void Bone::renderJointCoordinates() const
 {
@@ -117,7 +117,7 @@ void Bone::renderJointCoordinates() const
 	glEnd();
 }
 
-void Bone::renderJointConstraints() const
+void Bone::renderJointConstraints(const mat3d &boneToParent) const
 {
 	const double radius = 0.75;
 
@@ -125,16 +125,31 @@ void Bone::renderJointConstraints() const
 	// twist is constrained in bone-space
 	if ((primaryJointIdx >= 0) && (constraints.minTwist < constraints.maxTwist))
 	{
+		const double twistRadius = radius*0.75;
+
+		vec3d dir(boneToParent.elem[1][0], boneToParent.elem[1][1], boneToParent.elem[1][2]);
+		mat3d simpleM = calcDirectRotation(unitY, dir);
+		mat3d twistM = transpose(simpleM) * boneToParent;
+		twistM = transpose(twistM);
+
+		const vec3d jpos = joints[primaryJointIdx].pos;
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glBegin(GL_LINE_STRIP);
 		arcPoints(
 			joints[primaryJointIdx].pos,
-			vec3d(0.0, 1.0, 0.0),
-			vec3d(0.0, 0.0, 1.0),
-			radius/2.0,
+			twistM*vec3d(0.0, 1.0, 0.0),
+			twistM*vec3d(0.0, 0.0, 1.0),
+			twistRadius,
 			constraints.minTwist,
 			constraints.maxTwist
 		);
+		glEnd();
+
+		// render a line to indicate where in the twist-range the bone is
+		glColor3f(0.0f, 0.0f, 1.0f);
+		glBegin(GL_LINES);
+		glVertex3d(jpos.x, jpos.y, jpos.z);
+		glVertex3d(jpos.x, jpos.y, jpos.z + twistRadius);
 		glEnd();
 	}
 
@@ -445,7 +460,14 @@ void Skeleton::renderBone(const Bone *from, const Bone &b, const vec3d &pos, boo
 	if (showJointBasis && !b.isEffector())
 		b.renderJointCoordinates();
 	if (showJointConstraints && !b.isEffector())
-		b.renderJointConstraints();
+	{
+		mat3d rot;
+		if (from != 0)
+			rot = transpose(from->defaultOrient) * b.defaultOrient;
+		else
+			rot = b.defaultOrient;
+		b.renderJointConstraints(rot);
+	}
 	glPopMatrix();
 
 	for (int i = 0; i < (int)b.joints.size(); ++i)
