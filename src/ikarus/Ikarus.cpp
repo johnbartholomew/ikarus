@@ -84,7 +84,8 @@ public:
 		ikMode(true),
 		ikEnabled(false),
 		showJointBasis(false),
-		showConstraints(true)
+		showConstraints(true),
+		showGrid(true)
 	{
 		skeletons.push_back(new SkeletonItem("simple.skl", "Simple"));
 		skeletons.push_back(new SkeletonItem("snake.skl", "Snake"));
@@ -149,6 +150,9 @@ public:
 			targetSpeed = 0.0;
 		}
 
+		// the grid is always shown
+		// (no point turning it off really)
+		//showGrid = CheckBox("show-grid-chk", "Show grid", showGrid).run(gui, lyt);
 		showJointBasis = CheckBox("show-joint-basis-chk", "Show joint basis vectors", showJointBasis).run(gui, lyt);
 		showConstraints = CheckBox("show-constraints-chk", "Show joint constraints", showConstraints).run(gui, lyt);
 
@@ -209,14 +213,14 @@ public:
 
 		if (ikMode)
 		{
-			IkSolverDisplay("displayP", &camPerspective, skel.solver.get(), showJointBasis, showConstraints, gridList).run(gui, mainViewLyt);
+			IkSolverDisplay("displayP", &camPerspective, skel.solver.get(), showJointBasis, showConstraints, showGrid ? gridList : 0).run(gui, mainViewLyt);
 			IkSolverDisplay("displayX", &camX, skel.solver.get(), showJointBasis, showConstraints).run(gui, ortho0Lyt);
 			IkSolverDisplay("displayY", &camY, skel.solver.get(), showJointBasis, showConstraints).run(gui, ortho1Lyt);
 			IkSolverDisplay("displayZ", &camZ, skel.solver.get(), showJointBasis, showConstraints).run(gui, ortho2Lyt);
 		}
 		else
 		{
-			SkeletonDisplay("displayP", &camPerspective, &skel.skeleton, showJointBasis, showConstraints, gridList).run(gui, mainViewLyt);
+			SkeletonDisplay("displayP", &camPerspective, &skel.skeleton, showJointBasis, showConstraints, showGrid ? gridList : 0).run(gui, mainViewLyt);
 			SkeletonDisplay("displayX", &camX, &skel.skeleton, showJointBasis, showConstraints).run(gui, ortho0Lyt);
 			SkeletonDisplay("displayY", &camY, &skel.skeleton, showJointBasis, showConstraints).run(gui, ortho1Lyt);
 			SkeletonDisplay("displayZ", &camZ, &skel.skeleton, showJointBasis, showConstraints).run(gui, ortho2Lyt);
@@ -289,6 +293,7 @@ private:
 	bool ikEnabled;
 	bool showJointBasis;
 	bool showConstraints;
+	bool showGrid;
 
 	refvector<SkeletonItem> skeletons;
 };
