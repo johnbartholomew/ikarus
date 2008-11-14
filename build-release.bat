@@ -11,7 +11,7 @@ SET VC="C:\Program Files\Microsoft Visual Studio 9.0\Common7\IDE\VCExpress.exe"
 @echo Exporting from git
 git archive --format=tar --prefix=ikarus-%VER%/ HEAD | tar -x
 rm pax_global_header
-rm -r ../ikarus-%VER%/
+rm -rf ../ikarus-%VER%/
 
 cp bin/ikarus.exe ikarus-%VER%/release/ikarus.exe
 mv ikarus-%VER%/ ../ikarus-%VER%/
@@ -26,7 +26,11 @@ rm -r ikarus-%VER%\assets
 mv ikarus-%VER%\release ikarus-%VER%\windows
 
 @echo Building zip archive
-rm ikarus-%VER%.zip
-zip ikarus-%VER%.zip ikarus-%VER%
+rm -f ikarus-%VER%.zip
+rm -f ikarus-%VER%-noprefix.zip
+cd ikarus-%VER%
+zip -rq ..\ikarus-%VER%-noprefix.zip *
+cd ..
+zip -rq ikarus-%VER%.zip ikarus-%VER%\
 
 popd
