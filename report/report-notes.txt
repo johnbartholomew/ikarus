@@ -1,0 +1,19 @@
+
+
+- Algorithm:
+--- Explain CCD
+--- Explain root-changing (mention importance of data structures)
+--- Explain conceptual idea of constraints
+--- Explain constraint algorithm
+
+- Results:
+--- Converges on a solution very quickly in many circumstances
+--- Doesn't automatically produce 'natural' poses (this would require modification of the algorithm to add extra
+
+- Analysis/Conclusion:
+--- Most IK algorithms (at least numerical algorithms) can be described in Hugo Elias's terms; N-dimensional space where N is the number of degrees of freedom; algorithms optimize some function that ranges over this space (usually distance-to-the-target-position, but it could be something else, e.g., like orientation of the end-effector).  This gives a framework for comparison/analysis of the algorithms.
+--- CCD works by iterating over the N dimensions, immediately moving it to its closest minimum.
+--- This is actually quite a nice algorithm - deceptively fast in many situations.  It's fastest
+
+- Conclusions:
+--- ???
