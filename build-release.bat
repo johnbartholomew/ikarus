@@ -1,22 +1,32 @@
 
 @echo off
 
+SETLOCAL
 SET VER=%1
+SET VC="C:\Program Files\Microsoft Visual Studio 9.0\Common7\IDE\VCExpress.exe"
 
-echo Building archive
-git archive --format=tar --prefix=ikarus-%VER%/ HEAD > ..\ikarus-%VER%.tar
+@echo Building latest version
+%VC% vc90\ikarus.sln /build Release
+
+@echo Exporting from git
+git archive --format=tar --prefix=ikarus-%VER%/ HEAD | tar -x
+rm pax_global_header
+rm -r ../ikarus-%VER%/
+
+cp bin/ikarus.exe ikarus-%VER%/release/ikarus.exe
+mv ikarus-%VER%/ ../ikarus-%VER%/
 
 pushd ..
 
-echo Extracting archive
-tar -xf ikarus-%VER%.tar
-
-echo Removing internal files
+@echo Removing/renaming internal files
 rm ikarus-%VER%\.gitignore
+rm ikarus-%VER%\build-release.bat
 rm -r ikarus-%VER%\report
-mv ikarus-%VER%\release ikarus-%VER%\windows
 rm -r ikarus-%VER%\assets
-rm -r ikarus-%VER%\bin
-rm -r ikarus-%VER%\lib
+mv ikarus-%VER%\release ikarus-%VER%\windows
+
+@echo Building zip archive
+rm ikarus-%VER%.zip
+zip ikarus-%VER%.zip ikarus-%VER%
 
 popd
