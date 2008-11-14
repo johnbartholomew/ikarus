@@ -1,3 +1,4 @@
+~$*
 *.o
 *.a
 *.lib
@@ -10,6 +11,7 @@
 *.ilk
 *.pdb
 *.blend1
+*.pdf
 Debug/
 Release/
 
