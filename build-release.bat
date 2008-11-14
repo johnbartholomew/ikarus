@@ -14,16 +14,17 @@ rm pax_global_header
 rm -rf ../ikarus-%VER%/
 
 cp bin/ikarus.exe ikarus-%VER%/release/ikarus.exe
+if exist report/Ikarus-jb5950.pdf (cp report/Ikarus-jb5950.pdf ikarus-%VER%/Ikarus-jb5950.pdf)
 mv ikarus-%VER%/ ../ikarus-%VER%/
 
 pushd ..
 
 @echo Removing/renaming internal files
+mv ikarus-%VER%\release ikarus-%VER%\windows
 rm ikarus-%VER%\.gitignore
 rm ikarus-%VER%\build-release.bat
 rm -r ikarus-%VER%\report
 rm -r ikarus-%VER%\assets
-mv ikarus-%VER%\release ikarus-%VER%\windows
 
 @echo Building zip archive
 rm -f ikarus-%VER%.zip
