@@ -243,6 +243,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 		throw std::runtime_error("Invalid skeleton file: bad header.");
 
 	std::vector<Bone*> roots;
+	std::vector<Bone*> fixedBones;
 	vec3d summedRootWorldPos(0.0, 0.0, 0.0);
 
 	while (fs.good())
@@ -276,9 +277,11 @@ void Skeleton::loadFromFile(const std::string &fname)
 				>> b.displayVec.x >> b.displayVec.y >> b.displayVec.z
 				>> parentId
 				>> jointType;
+			
+			bool isFixed = false;
 
 			if (jointType == "fixed")
-				b.constraints = JointConstraints(JointConstraints::Fixed);
+				isFixed = true;
 			else if (jointType == "ball")
 				b.constraints = JointConstraints(JointConstraints::Ball);
 			else if (jointType == "saddle")
@@ -306,6 +309,9 @@ void Skeleton::loadFromFile(const std::string &fname)
 			if (parentId >= 0)
 			{
 				bones.push_back(bptr.release());
+				
+				if (isFixed)
+					fixedBones.push_back(&b);
 
 				if (parentId > 0)
 				{
@@ -375,6 +381,21 @@ void Skeleton::loadFromFile(const std::string &fname)
 	}
 
 	initBoneMatrices();
+
+	for (int i = 0; i < (int)fixedBones.size(); ++i)
+	{
+		Bone &b = *fixedBones[i];
+		const mat3d rot =
+			(b.hasParent())
+			?	(transpose(b.getParent()->defaultOrient) * b.defaultOrient)
+			:	b.defaultOrient;
+		vec3d dir;
+		double az, el, twist;
+		rotationToAzimuthElevationTwist(rot, dir, az, el, twist);
+		b.constraints.minAzimuth = b.constraints.maxAzimuth = az;
+		b.constraints.minElevation = b.constraints.maxElevation = el;
+		b.constraints.minTwist = b.constraints.maxTwist = twist;
+	}
 }
 
 void Skeleton::shiftBoneWorldPositions(const Bone *from, Bone &b, const vec3d &shift)

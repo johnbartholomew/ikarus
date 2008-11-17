@@ -8,35 +8,10 @@
 
 mat3d constrainRot(const JointConstraints &cnst, const mat3d &rot)
 {
-	double az = 0.0;
-	double el = 0.0;
-	double twist = 0.0;
-	double d;
+	vec3d dir;
+	double az, el, twist;
 
-	assert(rot.isrotation());
-
-	// Y is the direction vector, X & Z give twist
-	vec3d dir = rot*unitY;
-	mat3d simpleM = calcDirectRotation(unitY, dir);
-	mat3d twistM = transpose(simpleM) * rot;
-
-	assert(simpleM.isrotation());
-	assert(twistM.isrotation());
-
-	// calculate azimuth & elevation
-	directionToAzimuthElevation(dir, az, el);
-
-	// calculate twist
-	// vec3d tZ = twistM*unitZ;
-	vec3d tZ = vec3d(twistM.elem[2][0], twistM.elem[2][1], twistM.elem[2][2]);
-
-	// calculate the twist...
-	d = clamp(-1.0, 1.0, tZ.z);
-	twist = std::acos(d);
-	if (tZ.x < 0.0)
-		twist = -twist;
-
-	twist -= az;
+	rotationToAzimuthElevationTwist(rot, dir, az, el, twist);
 
 	// clamp the azimuth
 	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
@@ -61,7 +36,6 @@ mat3d constrainRot(const JointConstraints &cnst, const mat3d &rot)
 
 	// clamp the twist
 	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
-	twist += az;
 
 	return rotationFromAzElTwist(az, el, twist);
 }

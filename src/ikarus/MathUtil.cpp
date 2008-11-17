@@ -54,7 +54,7 @@ mat3d calcDirectRotation(const vec3d &tip, const vec3d &target)
 mat3d rotationFromAzElTwist(double az, double el, double twist)
 {
 	vec3d axis(cos(az), 0.0, -sin(az));
-	return vmath::rotation_matrix3(el, axis) * vmath::rotation_matrix3(twist, unitY);
+	return vmath::rotation_matrix3(el, axis) * vmath::rotation_matrix3(twist + az, unitY);
 }
 
 /*
@@ -144,4 +144,27 @@ void directionToAzimuthElevation(const vec3d &dir, double &az, double &el)
 		if (vOnPlane.x < 0.0)
 			az = -az;
 	}
+}
+
+void rotationToAzimuthElevationTwist(const mat3d &rot, vec3d &dir, double &az, double &el, double &twist)
+{	
+	dir = rot*unitY;
+	mat3d simpleM = calcDirectRotation(unitY, dir);
+	mat3d twistM = transpose(simpleM) * rot;
+
+	assert(simpleM.isrotation());
+	assert(twistM.isrotation());
+	
+	directionToAzimuthElevation(dir, az, el);
+
+	// calculate twist
+	// vec3d tZ = twistM*unitZ;
+	vec3d tZ = vec3d(twistM.elem[2][0], twistM.elem[2][1], twistM.elem[2][2]);
+
+	// calculate the twist...
+	twist = std::acos(clamp(-1.0, 1.0, tZ.z));
+	if (tZ.x < 0.0)
+		twist = -twist;
+
+	twist -= az;
 }
