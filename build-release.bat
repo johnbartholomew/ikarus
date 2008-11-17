@@ -24,7 +24,6 @@ mv ikarus-%VER%\release ikarus-%VER%\windows
 rm ikarus-%VER%\.gitignore
 rm ikarus-%VER%\build-release.bat
 rm -r ikarus-%VER%\report
-rm -r ikarus-%VER%\assets
 
 @echo Building zip archive
 rm -f ikarus-%VER%.zip
