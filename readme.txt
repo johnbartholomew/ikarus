@@ -24,6 +24,6 @@ S = backward/out (+z)
 
 Missing Functionality:
 - The code is not cross-platform - it does not build on Linux.  This wouldn't be technically difficult to do, but would take time that I don't want to spend if it's not necessary.  If this is a problem and you really want to build it yourself and run it on Linux, email me and I'll do the necessary conversion.
-- The constraints on the human are not set up correctly at the moment (but constraints on the simple and snake skeletons work reasonably well)
+- The constraints on the human don't work well in controlling the spine.
 
 -- John Bartholomew (jb5950)
