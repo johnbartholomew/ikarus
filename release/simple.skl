@@ -2,5 +2,5 @@ skeleton
 bonecount 5
 bone   Root      0.0   0.0  -5.0      0.0   0.0   5.0      -1      fixed
 bone   Base      0.0   0.0   0.0      0.0   4.0   0.0       0      fixed
-bone   Arm       0.0   4.0   0.0      0.0   0.0   3.0       1      custom -90.0 90.0    45.0 135.0   0.0 0.0
-bone   Hand      0.0   4.0   3.0      0.0  -1.0   0.0       2      custom  0.0 0.0     0.0  90.0    0.0 0.0
+bone   Arm       0.0   4.0   0.0      0.0   0.0   3.0       1      custom -90.0 90.0   45.0 135.0   0.0 0.0
+bone   Hand      0.0   4.0   3.0      0.0  -1.0   0.0       2      custom   0.0  0.0    0.0  90.0   0.0 0.0
