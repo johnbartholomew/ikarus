@@ -36,6 +36,8 @@ mat3d constrainRot(const JointConstraints &cnst, const mat3d &rot)
 	if (tZ.x < 0.0)
 		twist = -twist;
 
+	twist -= az;
+
 	// clamp the azimuth
 	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
 
@@ -59,6 +61,7 @@ mat3d constrainRot(const JointConstraints &cnst, const mat3d &rot)
 
 	// clamp the twist
 	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
+	twist += az;
 
 	return rotationFromAzElTwist(az, el, twist);
 }
