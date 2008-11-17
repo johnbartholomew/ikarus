@@ -329,100 +329,28 @@ void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 
 	const JointConstraints &cnst = b.constraints;
 
-	bool azFixed = (cnst.minAzimuth == cnst.maxAzimuth);
-	bool elFixed = (cnst.minElevation == cnst.maxElevation);
+	// clamp the azimuth
+	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
 
-	if (azFixed && elFixed)
+	// if the elevation can be varied at all, then work out the optimal elevation given the selected azimuth, and clamp it into range
+	if (cnst.minElevation != cnst.maxElevation)
 	{
-		az = cnst.minAzimuth;
-		el = cnst.minElevation;
-	}
-	else if (elFixed)
-	{
-		el = cnst.minElevation;
-		az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
-	}
-	else if (azFixed)
-	{
-		az = cnst.minAzimuth;
-		el = atan2(dir.z*cos(az) + dir.x*sin(az), dir.y);
-		el = clamp(cnst.minElevation, cnst.maxElevation, el);
-	}
-	else if (az < cnst.minAzimuth || az > cnst.maxAzimuth || el < cnst.minElevation || el > cnst.maxElevation)
-	{
-		bool azFree = ((cnst.maxAzimuth - cnst.minAzimuth) >= 2.0*M_PI);
-		if (azFree)
+		double K = dir.z*cos(az) + dir.x*sin(az);
+		el = atan2(K, dir.y);
+		if (el < cnst.minElevation || el > cnst.maxElevation)
 		{
-			el = atan2(dir.z*cos(az) + dir.x*sin(az), dir.y);
-			el = clamp(cnst.minElevation, cnst.maxElevation, el);
-		}
-		else
-		{
-			vec3d corners[4];
-			corners[0] = vec3d(sin(cnst.minElevation)*sin(cnst.minAzimuth), cos(cnst.minElevation), sin(cnst.minElevation)*cos(cnst.minAzimuth));
-			corners[1] = vec3d(sin(cnst.maxElevation)*sin(cnst.minAzimuth), cos(cnst.maxElevation), sin(cnst.maxElevation)*cos(cnst.minAzimuth));
-			corners[2] = vec3d(sin(cnst.minElevation)*sin(cnst.maxAzimuth), cos(cnst.minElevation), sin(cnst.minElevation)*cos(cnst.maxAzimuth));
-			corners[3] = vec3d(sin(cnst.maxElevation)*sin(cnst.maxAzimuth), cos(cnst.maxElevation), sin(cnst.maxElevation)*cos(cnst.maxAzimuth));
-
-			double dotCornerDir[4];
-			for (int i = 0; i < 4; ++i)
-				dotCornerDir[i] = dot(corners[i], dir);
-
-			int order[4] = {0,1,2,3};
-			// unrolled merge sort for 4 items (crazy)
-			if (dotCornerDir[order[0]] > dotCornerDir[order[1]])
-				std::swap(order[0], order[1]);
-			if (dotCornerDir[order[2]] > dotCornerDir[order[3]])
-				std::swap(order[2], order[3]);
-			// first pair and second pair are internally correct
-			if (dotCornerDir[order[0]] > dotCornerDir[order[2]])
-				std::swap(order[0], order[2]);
-			// first item must be smallest; third item is smaller than at least one of second and last item
-			if (dotCornerDir[order[1]] > dotCornerDir[order[3]])
-				std::swap(order[1], order[3]);
-			// last item must be largest
-			if (dotCornerDir[order[1]] > dotCornerDir[order[2]])
-				std::swap(order[1], order[2]);
-			// middle two items in correct order; we're done
-
-			// the minimum angles have the maximum dot products
-			// we see which two corners gave the minimum angles
-			// this gives us the edge on which the closest direction lies
-			// then we work out the position on that edge to minimize the
-			// angle from constrained direction to unconstrained direction
-
-			if ((order[3] & 1) == (order[2] & 1))
-			{
-				if ((order[3] & 1) == 0)
-					el = cnst.minElevation;
-				else
-					el = cnst.maxElevation;
-
-				az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
-			}
-			else if ((order[3] & 2) == (order[2] & 2))
-			{
-				if ((order[3] & 2) == 0)
-					az = cnst.minAzimuth;
-				else
-					az = cnst.maxAzimuth;
-
-				el = atan2(dir.z*cos(az) + dir.x*sin(az), dir.y);
-				el = clamp(cnst.minElevation, cnst.maxElevation, el);
-			}
+			double dotMin = K*sin(cnst.minElevation) + dir.y*cos(cnst.minElevation);
+			double dotMax = K*sin(cnst.maxElevation) + dir.y*cos(cnst.maxElevation);
+			if (dotMin < dotMax)
+				el = cnst.maxElevation;
 			else
-			{
-				// invalid
-				// shouldn't ever happen
-				// unfortunately, it does... in which case we revert to just
-				// naively clamping the values and hope that does something vaguely sensible
-				az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
-				el = clamp(cnst.minElevation, cnst.maxElevation, el);
-			}
+				el = cnst.minElevation;
 		}
 	}
+	else
+		el = cnst.minElevation;
 
-	// twist is constrained with a simple clamping operation
+	// clamp the twist
 	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
 
 	bs.rot = rotationFromAzElTwist(az, el, twist);
