@@ -82,7 +82,7 @@ public:
 		targetSpeed(0.0),
 		curSkel(0),
 		ikMode(true),
-		ikEnabled(false),
+		ikEnabled(true),
 		showJointBasis(false),
 		showConstraints(true),
 		showGrid(true)
