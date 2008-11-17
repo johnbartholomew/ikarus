@@ -4,6 +4,65 @@
 #include "GfxUtil.h"
 #include "MathUtil.h"
 
+// ===== Utility Joint Constraint Application function =======================
+
+mat3d constrainRot(const JointConstraints &cnst, const mat3d &rot)
+{
+	double az = 0.0;
+	double el = 0.0;
+	double twist = 0.0;
+	double d;
+
+	assert(rot.isrotation());
+
+	// Y is the direction vector, X & Z give twist
+	vec3d dir = rot*unitY;
+	mat3d simpleM = calcDirectRotation(unitY, dir);
+	mat3d twistM = transpose(simpleM) * rot;
+
+	assert(simpleM.isrotation());
+	assert(twistM.isrotation());
+
+	// calculate azimuth & elevation
+	directionToAzimuthElevation(dir, az, el);
+
+	// calculate twist
+	// vec3d tZ = twistM*unitZ;
+	vec3d tZ = vec3d(twistM.elem[2][0], twistM.elem[2][1], twistM.elem[2][2]);
+
+	// calculate the twist...
+	d = clamp(-1.0, 1.0, tZ.z);
+	twist = std::acos(d);
+	if (tZ.x < 0.0)
+		twist = -twist;
+
+	// clamp the azimuth
+	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
+
+	// if the elevation can be varied at all, then work out the optimal elevation given the selected azimuth, and clamp it into range
+	if (cnst.minElevation != cnst.maxElevation)
+	{
+		double K = dir.z*cos(az) + dir.x*sin(az);
+		el = atan2(K, dir.y);
+		if (el < cnst.minElevation || el > cnst.maxElevation)
+		{
+			double dotMin = K*sin(cnst.minElevation) + dir.y*cos(cnst.minElevation);
+			double dotMax = K*sin(cnst.maxElevation) + dir.y*cos(cnst.maxElevation);
+			if (dotMin < dotMax)
+				el = cnst.maxElevation;
+			else
+				el = cnst.minElevation;
+		}
+	}
+	else
+		el = cnst.minElevation;
+
+	// clamp the twist
+	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
+
+	return rotationFromAzElTwist(az, el, twist);
+}
+
 // ===== IkSolver ============================================================
 
 IkSolver::IkSolver(const Skeleton &skel)
@@ -291,69 +350,22 @@ void IkSolver::applyAllConstraints(const Bone *parent, const Bone &b)
 
 void IkSolver::applyConstraints(const Bone &b, const Bone::Connection &bj)
 {
-	// FIXME: need to handle this case
-	if (bj.to != b.getParent()) return;
-
-	//testAzElRotation();
+	// in our tree,
+	// b is the child
+	// bj.to is the parent
+	// but this may not be the same as the canonical skeleton tree
 
 	BoneState &bs = boneStates[b.id];
-	const mat3d &rot = bs.rot;
-
-	double az = 0.0;
-	double el = 0.0;
-	double twist = 0.0;
-	double d;
-
-	assert(rot.isrotation());
-
-	// Y is the direction vector, X & Z give twist
-	vec3d dir = rot*unitY;
-	mat3d simpleM = calcDirectRotation(unitY, dir);
-	mat3d twistM = transpose(simpleM) * rot;
-
-	assert(simpleM.isrotation());
-	assert(twistM.isrotation());
-
-	// calculate azimuth & elevation
-	directionToAzimuthElevation(dir, az, el);
-
-	// calculate twist
-	// vec3d tZ = twistM*unitZ;
-	vec3d tZ = vec3d(twistM.elem[2][0], twistM.elem[2][1], twistM.elem[2][2]);
-
-	// calculate the twist...
-	d = clamp(-1.0, 1.0, tZ.z);
-	twist = std::acos(d);
-	if (tZ.x < 0.0)
-		twist = -twist;
-
-	const JointConstraints &cnst = b.constraints;
-
-	// clamp the azimuth
-	az = clamp(cnst.minAzimuth, cnst.maxAzimuth, az);
-
-	// if the elevation can be varied at all, then work out the optimal elevation given the selected azimuth, and clamp it into range
-	if (cnst.minElevation != cnst.maxElevation)
-	{
-		double K = dir.z*cos(az) + dir.x*sin(az);
-		el = atan2(K, dir.y);
-		if (el < cnst.minElevation || el > cnst.maxElevation)
-		{
-			double dotMin = K*sin(cnst.minElevation) + dir.y*cos(cnst.minElevation);
-			double dotMax = K*sin(cnst.maxElevation) + dir.y*cos(cnst.maxElevation);
-			if (dotMin < dotMax)
-				el = cnst.maxElevation;
-			else
-				el = cnst.minElevation;
-		}
-	}
+	if (bj.to == b.getParent())
+		bs.rot = constrainRot(b.constraints, bs.rot);
 	else
-		el = cnst.minElevation;
+	{
+		// in our internal tree, the parent/child relationship is reversed...
+		// this is a somewhat painful situation
 
-	// clamp the twist
-	twist = clamp(cnst.minTwist, cnst.maxTwist, twist);
-
-	bs.rot = rotationFromAzElTwist(az, el, twist);
+		const JointConstraints &cnst = bj.to->constraints;
+		bs.rot = transpose(constrainRot(cnst, transpose(bs.rot)));
+	}
 }
 
 void IkSolver::updateBoneTransforms() const
