@@ -1,31 +1,30 @@
 #ifndef ORB_INPUT_H
 #define ORB_INPUT_H
 
-#define NOMINMAX
-#include <Windows.h>
+#include "SDL_keysym.h"
 
 // nb: these are chosen to match the windows virtual key codes
 SCOPED_ENUM(KeyCode)
 {
 	Invalid    = 0,
 
-	Escape     = VK_ESCAPE,
+	Escape     = SDLK_ESCAPE,
 
-	Return     = VK_RETURN,
-	Backspace  = VK_BACK,
-	Tab        = VK_TAB,
-	Space      = VK_SPACE,
+	Return     = SDLK_RETURN,
+	Backspace  = SDLK_BACKSPACE,
+	Tab        = SDLK_TAB,
+	Space      = SDLK_SPACE,
 
-	LeftShift  = VK_LSHIFT,
-	RightShift = VK_RSHIFT,
-	LeftCtrl   = VK_LCONTROL,
-	RightCtrl  = VK_RCONTROL,
-	LeftWin    = VK_LWIN,
-	RightWin   = VK_RWIN,
-	LeftMenu   = VK_LMENU,
-	RightMenu  = VK_RMENU,
-	Screenshot = VK_SNAPSHOT,
-	Pause      = VK_PAUSE,
+	LeftShift  = SDLK_LSHIFT,
+	RightShift = SDLK_RSHIFT,
+	LeftCtrl   = SDLK_LCTRL,
+	RightCtrl  = SDLK_RCTRL,
+	LeftWin    = SDLK_LMETA,
+	RightWin   = SDLK_RMETA,
+	LeftMenu   = SDLK_LSUPER,
+	RightMenu  = SDLK_RSUPER,
+	Screenshot = SDLK_PRINT,
+	Pause      = SDLK_PAUSE,
 
 	Key0       = '0',
 	Key1       = '1',
@@ -65,62 +64,64 @@ SCOPED_ENUM(KeyCode)
 	Y          = 'Y',
 	Z          = 'Z',
 
-	NumPad0    = VK_NUMPAD0,
-	NumPad1    = VK_NUMPAD1,
-	NumPad2    = VK_NUMPAD2,
-	NumPad3    = VK_NUMPAD3,
-	NumPad4    = VK_NUMPAD4,
-	NumPad5    = VK_NUMPAD5,
-	NumPad6    = VK_NUMPAD6,
-	NumPad7    = VK_NUMPAD7,
-	NumPad8    = VK_NUMPAD8,
-	NumPad9    = VK_NUMPAD9,
+	NumPad0    = SDLK_KP0,
+	NumPad1    = SDLK_KP1,
+	NumPad2    = SDLK_KP2,
+	NumPad3    = SDLK_KP3,
+	NumPad4    = SDLK_KP4,
+	NumPad5    = SDLK_KP5,
+	NumPad6    = SDLK_KP6,
+	NumPad7    = SDLK_KP7,
+	NumPad8    = SDLK_KP8,
+	NumPad9    = SDLK_KP9,
 
-	NumPadDot      = VK_DECIMAL,
-	NumPadEnter    = VK_SEPARATOR,
-	NumPadAdd      = VK_ADD,
-	NumPadSubtract = VK_SUBTRACT,
-	NumPadMultiply = VK_MULTIPLY,
-	NumPadDivide   = VK_DIVIDE,
+	NumPadDot      = SDLK_KP_PERIOD,
+	NumPadEnter    = SDLK_KP_ENTER,
+	NumPadAdd      = SDLK_KP_PLUS,
+	NumPadSubtract = SDLK_KP_MINUS,
+	NumPadMultiply = SDLK_KP_MULTIPLY,
+	NumPadDivide   = SDLK_KP_DIVIDE,
 	
-	ArrowLeft  = VK_LEFT,
-	ArrowRight = VK_RIGHT,
-	ArrowUp    = VK_UP,
-	ArrowDown  = VK_DOWN,
+	ArrowLeft  = SDLK_LEFT,
+	ArrowRight = SDLK_RIGHT,
+	ArrowUp    = SDLK_UP,
+	ArrowDown  = SDLK_DOWN,
 	
-	Insert     = VK_INSERT,
-	Delete     = VK_DELETE,
-	Home       = VK_HOME,
-	End        = VK_END,
-	PageUp     = VK_PRIOR,
-	PageDown   = VK_NEXT,
+	Insert     = SDLK_INSERT,
+	Delete     = SDLK_DELETE,
+	Home       = SDLK_HOME,
+	End        = SDLK_END,
+	PageUp     = SDLK_PAGEUP,
+	PageDown   = SDLK_PAGEDOWN,
 
-	F1         = VK_F1,
-	F2         = VK_F2,
-	F3         = VK_F3,
-	F4         = VK_F4,
-	F5         = VK_F5,
-	F6         = VK_F6,
-	F7         = VK_F7,
-	F8         = VK_F8,
-	F9         = VK_F9,
-	F10        = VK_F10,
-	F11        = VK_F11,
-	F12        = VK_F12,
+	F1         = SDLK_F1,
+	F2         = SDLK_F2,
+	F3         = SDLK_F3,
+	F4         = SDLK_F4,
+	F5         = SDLK_F5,
+	F6         = SDLK_F6,
+	F7         = SDLK_F7,
+	F8         = SDLK_F8,
+	F9         = SDLK_F9,
+	F10        = SDLK_F10,
+	F11        = SDLK_F11,
+	F12        = SDLK_F12,
 
-	NumLock    = VK_NUMLOCK,
-	ScrollLock = VK_SCROLL,
-	CapsLock   = VK_CAPITAL,
+	NumLock    = SDLK_NUMLOCK,
+	ScrollLock = SDLK_SCROLLOCK,
+	CapsLock   = SDLK_CAPSLOCK,
 
 	// mouse button key codes
+    /* XXX SDL
 	MouseL  = VK_LBUTTON,
 	MouseR  = VK_RBUTTON,
 	MouseM  = VK_MBUTTON,
 	MouseX1 = VK_XBUTTON1,
 	MouseX2 = VK_XBUTTON2,
+    */
 
 	// not a real KeyCode
-	KEY_CODE_COUNT = 0xff
+	KEY_CODE_COUNT = 0xffff,
 };
 
 SCOPED_ENUM(MouseButton)
@@ -180,6 +181,7 @@ public:
 	vec2i getMouseClickPos(int button) const
 	{ assert(button >= 0 && button < MouseButton::MOUSE_BUTTON_COUNT); return mMouseClickPos[button]; }
 
+/* XXX SDL
 	int getMouseWheelPos() const
 	{ return mWheelPos / WHEEL_DELTA; }
 	int getMouseWheelDelta() const
@@ -191,6 +193,7 @@ public:
 	{ return wasKeyPressed(buttonToKeyCode(button)); }
 	bool wasMouseReleased(int button) const
 	{ return wasKeyReleased(buttonToKeyCode(button)); }
+*/
 
 	bool isKeyDown(int key) const
 	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] & Down); }
@@ -199,6 +202,7 @@ public:
 	bool wasKeyReleased(int key) const
 	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] == Released); }
 
+/* XXX SDL
 	int buttonToKeyCode(int button) const
 	{
 		switch (button)
@@ -211,6 +215,7 @@ public:
 		default: assert(0); return KeyCode::Invalid;
 		}
 	}
+*/
 
 private:
 	enum KeyState
