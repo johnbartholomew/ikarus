@@ -3,7 +3,7 @@
 
 #define SCOPED_ENUM(name)                   \
 struct name {                               \
-	enum Type;                              \
+	enum Type : unsigned int;               \
 	name(): value(0) {}                     \
 	name(Type v): value(v) {}               \
 	explicit name(int v): value(v) {}       \

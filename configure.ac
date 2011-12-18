@@ -24,6 +24,8 @@ fi
 LIBS="$LIBS `$SDLCONFIG --libs`"
 CXXFLAGS="$CXXFLAGS `$SDLCONFIG --cflags`"
 
+CXXFLAGS="-std=c++0x"
+
 AC_CONFIG_FILES([
 	Makefile 
 	src/Makefile
