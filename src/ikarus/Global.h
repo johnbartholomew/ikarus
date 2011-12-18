@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cctype>
+#include <cstring>
 #include <cmath>
 
 #include <algorithm>
