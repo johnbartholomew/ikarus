@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cassert>
+#include <memory>
 
 namespace detail
 {
