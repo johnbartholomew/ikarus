@@ -23,6 +23,8 @@
 
 // global non-standard libraries
 
+#ifdef _WIN32
+
 #define _WIN32_WINNT 0x0501
 #define STRICT
 #define WIN32_LEAN_AND_MEAN
@@ -31,6 +33,12 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
+
+#else
+
+#include <GL/glew.h>
+
+#endif
 
 // global internal headers
 
