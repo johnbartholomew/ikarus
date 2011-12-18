@@ -3,7 +3,7 @@
 
 #define SCOPED_ENUM(name)                   \
 struct name {                               \
-	enum Type : unsigned int;               \
+	enum Type : int;                        \
 	name(): value(0) {}                     \
 	name(Type v): value(v) {}               \
 	explicit name(int v): value(v) {}       \
@@ -13,7 +13,7 @@ struct name {                               \
 	{ value = v.value; return *this; }      \
 	int value;                              \
 };                                          \
-enum name::Type                             \
+enum name::Type : int                       \
 //===========================================
 
 #endif
