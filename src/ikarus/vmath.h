@@ -490,7 +490,7 @@ struct mat4 {
 		elem[3][3] = m33;
 	}
 
-	explicit mat4(const vec4<T>& col0, const vec4<T>& col1, const vec4<T>& col2, const vec4<T>& v3)
+	explicit mat4(const vec4<T>& col0, const vec4<T>& col1, const vec4<T>& col2, const vec4<T>& col3)
 	{
 		elem[0][0] = col0[0];
 		elem[0][1] = col0[1];
