@@ -142,14 +142,16 @@ void OrbWindow::flipGL()
 
 void OrbWindow::handleKey(int key, int action)
 {
+	key = glfw_key_to_orb_key(key);
 	if (action == GLFW_PRESS)
-		input.keyPress(glfw_key_to_orb_key(key));
+		input.keyPress(key);
 	else
-		input.keyRelease(glfw_key_to_orb_key(key));
+		input.keyRelease(key);
 }
 
 void OrbWindow::handleChar(int character, int action)
 {
+	assert(character >= 32 && character < 127); // printable ASCII
 	if (action == GLFW_PRESS)
 		input.keyPress(character);
 	else
