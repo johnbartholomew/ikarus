@@ -302,8 +302,6 @@ int APIENTRY wWinMain(HINSTANCE hPrevInstance, HINSTANCE hInstance, LPWSTR cmdLi
 int main(int argc, char *argv[])
 #endif
 {
-	int retval = 0;
-
 	try
 	{
 		OrbWindow wnd;
@@ -325,16 +323,16 @@ int main(int argc, char *argv[])
 		wnd.input.beginFrame();
 		while (true)
 		{
-			wnd.input.beginFrame();
-
-			if (! Window::ProcessWaitingMessages(&retval))
-				break;
-
 			if (wnd.input.wasKeyPressed(KeyCode::Escape))
 				break;
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			ikarus.run(gui);
+
+			wnd.input.beginFrame();
+			if (! wnd.processEvents())
+				break;
+
 			wnd.flipGL();
 		}
 
@@ -355,17 +353,16 @@ int main(int argc, char *argv[])
 				cam = &cameraPerspective;
 #endif
 		}
+		return 0;
 	}
 	catch (std::exception &e)
 	{
 		std::cerr << "Exception: " << e.what() << std::endl;
-		retval = 1;
+		return 1;
 	}
 	catch (...)
 	{
 		std::cerr << "Unknown exception." << std::endl;
-		retval = 1;
+		return 1;
 	}
-
-	return retval;
 }

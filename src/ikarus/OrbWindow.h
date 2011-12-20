@@ -14,6 +14,7 @@ public:
 	explicit OrbWindow();
 	~OrbWindow();
 
+	bool processEvents();
 	void open(const wchar_t *title, int width, int height);
 	void flipGL();
 

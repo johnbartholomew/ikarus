@@ -12,6 +12,11 @@ OrbWindow::~OrbWindow()
 {
 }
 
+bool OrbWindow::processEvents()
+{
+	return Window::ProcessWaitingMessages();
+}
+
 void OrbWindow::open(const wchar_t *title, int width, int height)
 {
 	HINSTANCE inst = GetModuleHandle(NULL);
