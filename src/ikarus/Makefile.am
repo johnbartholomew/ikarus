@@ -42,12 +42,12 @@ ikarus_SOURCES = \
 # Win32 sources: included in the distribution tarball for completeness
 
 dist_noinst_DATA = \
-	resources.h \
-	OrbWin32.h \
-	OrbWin32.cpp \
-	Win32OpenGLContext.h \
-	Win32OpenGLContext.cpp \
-	Win32Error.h \
-	Win32Error.cpp \
-	Win32Window.h \
-	Win32Window.cpp
+	win32/resources.h \
+	win32/OrbWin32.h \
+	win32/OrbWin32.cpp \
+	win32/Win32OpenGLContext.h \
+	win32/Win32OpenGLContext.cpp \
+	win32/Win32Error.h \
+	win32/Win32Error.cpp \
+	win32/Win32Window.h \
+	win32/Win32Window.cpp
