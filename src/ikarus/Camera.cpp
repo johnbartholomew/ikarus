@@ -12,7 +12,7 @@ CameraOrtho::CameraOrtho(int axis)
 
 void CameraOrtho::update(const OrbInput &input, const recti &bounds)
 {
-	int wheel = 0; // XXX SDL input.getMouseWheelPos();
+	int wheel = input.getMouseWheelPos();
 	// nb: if you change this change the CameraOrtho initializer
 	scale = (GridWidth/2.0) * std::pow(CameraDistWheelScale, -wheel);
 }
@@ -84,10 +84,9 @@ void CameraAzimuthElevation::update(const OrbInput &input, const recti &bounds)
 	const vec2i screenCentre = bounds.topLeft + vec2i(bounds.size.x/2, bounds.size.y/2);
 	const double screenRadius = std::min(bounds.size.x, bounds.size.y) / 2.0;
 
-	int wheel = 0; // XXX SDL input.getMouseWheelPos();
+	int wheel = input.getMouseWheelPos();
 	cameraDist = CameraDistance * std::pow(CameraDistWheelScale, -wheel);
 
-/* XXX SDL
 	vec2i mousePos = input.getMousePos();
 	if (input.isMouseDown(MouseButton::Right))
 	{
@@ -110,8 +109,7 @@ void CameraAzimuthElevation::update(const OrbInput &input, const recti &bounds)
 			updateDrag(screenCentre, screenRadius, mousePos);
 			dragging = false;
 		}
-    }
-*/
+	}
 }
 
 mat4d CameraAzimuthElevation::getProjection(const recti &bounds) const

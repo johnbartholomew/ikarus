@@ -112,13 +112,11 @@ SCOPED_ENUM(KeyCode)
 	CapsLock   = SDLK_CAPSLOCK,
 
 	// mouse button key codes
-    /* XXX SDL
-	MouseL  = VK_LBUTTON,
-	MouseR  = VK_RBUTTON,
-	MouseM  = VK_MBUTTON,
-	MouseX1 = VK_XBUTTON1,
-	MouseX2 = VK_XBUTTON2,
-    */
+	MouseL  = SDLK_LAST,
+	MouseR,
+	MouseM,
+	MouseX1,
+	MouseX2,
 
 	// not a real KeyCode
 	KEY_CODE_COUNT = 0xffff,
@@ -181,7 +179,6 @@ public:
 	vec2i getMouseClickPos(int button) const
 	{ assert(button >= 0 && button < MouseButton::MOUSE_BUTTON_COUNT); return mMouseClickPos[button]; }
 
-/* XXX SDL
 	int getMouseWheelPos() const
 	{ return mWheelPos / WHEEL_DELTA; }
 	int getMouseWheelDelta() const
@@ -193,7 +190,6 @@ public:
 	{ return wasKeyPressed(buttonToKeyCode(button)); }
 	bool wasMouseReleased(int button) const
 	{ return wasKeyReleased(buttonToKeyCode(button)); }
-*/
 
 	bool isKeyDown(int key) const
 	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] & Down); }
@@ -202,7 +198,6 @@ public:
 	bool wasKeyReleased(int key) const
 	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] == Released); }
 
-/* XXX SDL
 	int buttonToKeyCode(int button) const
 	{
 		switch (button)
@@ -215,7 +210,6 @@ public:
 		default: assert(0); return KeyCode::Invalid;
 		}
 	}
-*/
 
 private:
 	enum KeyState
