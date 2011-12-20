@@ -340,24 +340,6 @@ int main(int argc, char *argv[])
 
 			wnd.flipGL();
 		}
-
-		{
-#if 0
-			cam->update();
-			render(skel, *cam);
-
-			glfwSwapBuffers();
-
-			if (glfwGetKey(GLFW_KEY_KP_7))
-				cam = &cameraY;
-			if (glfwGetKey(GLFW_KEY_KP_1))
-				cam = &cameraZ;
-			if (glfwGetKey(GLFW_KEY_KP_3))
-				cam = &cameraX;
-			if (glfwGetKey(GLFW_KEY_KP_5))
-				cam = &cameraPerspective;
-#endif
-		}
 		return 0;
 	}
 	catch (std::exception &e)
