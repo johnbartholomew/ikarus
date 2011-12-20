@@ -119,7 +119,7 @@ SCOPED_ENUM(KeyCode)
 	MouseX2,
 
 	// not a real KeyCode
-	KEY_CODE_COUNT = 0xffff,
+	KEY_CODE_COUNT
 };
 
 SCOPED_ENUM(MouseButton)
@@ -130,7 +130,7 @@ SCOPED_ENUM(MouseButton)
 	X1      = 3, // extra buttons; typically used for, e.g., browser back & forward
 	X2      = 4,
 
-	MOUSE_BUTTON_COUNT = 5
+	MOUSE_BUTTON_COUNT
 };
 
 class OrbInput
