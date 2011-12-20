@@ -194,11 +194,11 @@ public:
 	{ return wasKeyReleased(buttonToKeyCode(button)); }
 
 	bool isKeyDown(int key) const
-	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] & Down); }
+	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] & 1u); }
 	bool wasKeyPressed(int key) const
-	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] == Pressed); }
+	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] & 2u); }
 	bool wasKeyReleased(int key) const
-	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] == Released); }
+	{ assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT); return (mKeyState[key] & 4u); }
 
 	int buttonToKeyCode(int button) const
 	{
@@ -214,14 +214,6 @@ public:
 	}
 
 private:
-	enum KeyState
-	{
-		Up       = 0,
-		Down     = 1,
-		Released = 2,
-		Pressed  = 3
-	};
-
 	// the window's current size (treated as input because the user can change it)
 	vec2i mWindowSize;
 	// the mouse position at the end of the frame

@@ -25,8 +25,8 @@ void OrbInput::beginFrame()
 
 	for (int i = 0; i < KeyCode::KEY_CODE_COUNT; ++i)
 	{
-		// reset the changed flag
-		mKeyState[i] &= Down;
+		// reset the pressed and released flags
+		mKeyState[i] &= 1u;
 	}
 }
 
@@ -68,11 +68,11 @@ void OrbInput::mouseScroll(int delta)
 void OrbInput::keyPress(int key)
 {
 	assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT);
-	mKeyState[key] = Pressed;
+	mKeyState[key] = mKeyState[key] | 3u;
 }
 
 void OrbInput::keyRelease(int key)
 {
 	assert(key >= 0 && key < KeyCode::KEY_CODE_COUNT);
-	mKeyState[key] = Released;
+	mKeyState[key] = (mKeyState[key] & 2u) | 4u;
 }
