@@ -100,4 +100,15 @@ inline std::string ReadFileAsString(const char *fname)
 	return data;
 }
 
+inline std::string ReadLine(std::istream &stream)
+{
+	std::string s;
+	std::getline(stream, s);
+	if (!s.empty() && s[s.size()-1] == '\r')
+	{
+		s.erase(s.size()-1);
+	}
+	return s;
+}
+
 #endif

@@ -2,6 +2,7 @@
 #include "Skeleton.h"
 #include "GfxUtil.h"
 #include "MathUtil.h"
+#include "FileUtil.h"
 
 // ===== Bone ================================================================
 
@@ -238,7 +239,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 	std::ifstream fs(fname.c_str(), std::ios::in);
 	std::string ln;
 
-	std::getline(fs, ln);
+	ln = ReadLine(fs);
 	if (ln != "skeleton")
 		throw std::runtime_error("Invalid skeleton file: bad header.");
 
@@ -248,7 +249,7 @@ void Skeleton::loadFromFile(const std::string &fname)
 
 	while (fs.good())
 	{
-		std::getline(fs, ln);
+		ln = ReadLine(fs);
 		std::istringstream ss(ln);
 		std::string cmd;
 		ss >> cmd;
