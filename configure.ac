@@ -14,16 +14,17 @@ AC_C_CONST
 AC_PROG_RANLIB
 #AC_PROG_LIBTOOL
 
-AC_CHECK_LIB([GL], [glGetString], [], [AC_MSG_ERROR([OpenGL is required])])
-AC_CHECK_LIB([GLEW], [glewInit], [], [AC_MSG_ERROR([GLEW is required])])
-AC_CHECK_LIB([SOIL], [SOIL_load_image], [], [AC_MSG_ERROR([SOIL is required])], [-lm])
+AC_CHECK_LIB([GL], [glGetString], [GL_LIBS="-lGL"], [AC_MSG_ERROR([OpenGL is required])])
+AC_CHECK_LIB([SOIL], [SOIL_load_image], [SOIL_LIBS="-lSOIL"], [AC_MSG_ERROR([SOIL is required])], [-lGL -lm])
+PKG_CHECK_MODULES([GLEW], [glew >= 1.5], [], [AC_MSG_ERROR([GLEW is required])])
+PKG_CHECK_MODULES([GLFW], [libglfw >= 2.7], [], [AC_MSG_ERROR([GLFW is required])])
 
-AC_PATH_PROG([SDLCONFIG], [sdl-config])
-if test "x-$SDLCONFIG" = "x-" ; then
-	AC_MSG_ERROR([SDL is required])
-fi
-LIBS="$LIBS `$SDLCONFIG --libs`"
-CXXFLAGS="$CXXFLAGS `$SDLCONFIG --cflags`"
+ALL_CFLAGS="${GLFW_CFLAGS} ${GLEW_CFLAGS}"
+ALL_CXXFLAGS="$ALL_CFLAGS"
+ALL_LIBS="${GLFW_LIBS} ${SOIL_LIBS} ${GLEW_LIBS} ${GL_LIBS}"
+AC_SUBST(ALL_CFLAGS)
+AC_SUBST(ALL_CXXFLAGS)
+AC_SUBST(ALL_LIBS)
 
 CXXFLAGS="$CXXFLAGS -std=c++0x"
 

@@ -19,7 +19,7 @@ noinst_HEADERS = \
 	smartptr.h \
 	Texture.h \
 	VertexBuffer.h \
-	OrbSDL.h \
+	OrbGLFW.h \
 	vmath.h
 
 ikarus_SOURCES = \
@@ -37,11 +37,19 @@ ikarus_SOURCES = \
 	SkeletonDisplay.cpp \
 	Texture.cpp \
 	VertexBuffer.cpp \
+	OrbGLFW.cpp
+
+ikarus_CFLAGS = $(ALL_CFLAGS)
+ikarus_LDADD = $(ALL_LIBS)
+
+# Disabled sources:
+dist_noinst_DATA = \
+	OrbSDL.h \
 	OrbSDL.cpp
 
 # Win32 sources: included in the distribution tarball for completeness
 
-dist_noinst_DATA = \
+dist_noinst_DATA += \
 	win32/resources.h \
 	win32/OrbWin32.h \
 	win32/OrbWin32.cpp \

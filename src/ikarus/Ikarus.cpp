@@ -4,7 +4,7 @@
 #ifdef _WIN32
 #include "OrbWin32.h"
 #else
-#include "OrbSDL.h"
+#include "OrbGLFW.h"
 #endif
 
 #include "Camera.h"
