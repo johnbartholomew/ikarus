@@ -122,6 +122,7 @@ void OrbWindow::open(const wchar_t *title, int width, int height)
 	int ret = glfwOpenWindow(width, height, 8, 8, 8, 0, 16, 0, GLFW_WINDOW);
 	if (ret != GL_TRUE)
 		throw std::runtime_error("failed to create OpenGL window");
+	glfwDisable(GLFW_AUTO_POLL_EVENTS);
 	//glfwSetWindowTitle(title);
 	glfwSetKeyCallback(&OrbWindow::dispatchKeyEvent);
 	glfwSetCharCallback(&OrbWindow::dispatchCharEvent);
