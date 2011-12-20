@@ -35,7 +35,6 @@
 #include "refvector.h"
 #include "smartptr.h"
 #include "vmath.h"
-#include "scopedenum.h"
 #include "murmurhash.h"
 
 namespace vmath

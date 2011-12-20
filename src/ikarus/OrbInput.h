@@ -4,136 +4,114 @@
 #include <SDL/SDL_keysym.h>
 
 // nb: these are chosen to match the windows virtual key codes
-SCOPED_ENUM(KeyCode)
+namespace KeyCode
 {
-	Invalid    = 0,
+	enum KeyCodeValues
+	{
+		INVALID     = 0,
 
-	Escape     = SDLK_ESCAPE,
+		Backspace   = 8,
+		Tab         = 9,
+		Return      = 13,
+		PRINTABLE_BEGIN = 32,
+		Space       = 32,
+		PRINTABLE_END = 127,
 
-	Return     = SDLK_RETURN,
-	Backspace  = SDLK_BACKSPACE,
-	Tab        = SDLK_TAB,
-	Space      = SDLK_SPACE,
+		SPECIAL_BEGIN = 128,
 
-	LeftShift  = SDLK_LSHIFT,
-	RightShift = SDLK_RSHIFT,
-	LeftCtrl   = SDLK_LCTRL,
-	RightCtrl  = SDLK_RCTRL,
-	LeftWin    = SDLK_LSUPER,
-	RightWin   = SDLK_RSUPER,
-	LeftMenu   = SDLK_LMETA,
-	RightMenu  = SDLK_RMETA,
-	LeftAlt    = SDLK_LALT,
-	RightAlt   = SDLK_RALT,
-	Screenshot = SDLK_PRINT,
-	Pause      = SDLK_PAUSE,
+		Escape = SPECIAL_BEGIN,
 
-	Key0       = '0',
-	Key1       = '1',
-	Key2       = '2',
-	Key3       = '3',
-	Key4       = '4',
-	Key5       = '5',
-	Key6       = '6',
-	Key7       = '7',
-	Key8       = '8',
-	Key9       = '9',
+		F1,
+		F2,
+		F3,
+		F4,
+		F5,
+		F6,
+		F7,
+		F8,
+		F9,
+		F10,
+		F11,
+		F12,
 
-	A          = 'A',
-	B          = 'B',
-	C          = 'C',
-	D          = 'D',
-	E          = 'E',
-	F          = 'F',
-	G          = 'G',
-	H          = 'H',
-	I          = 'I',
-	J          = 'J',
-	K          = 'K',
-	L          = 'L',
-	M          = 'M',
-	N          = 'N',
-	O          = 'O',
-	P          = 'P',
-	Q          = 'Q',
-	R          = 'R',
-	S          = 'S',
-	T          = 'T',
-	U          = 'U',
-	V          = 'V',
-	W          = 'W',
-	X          = 'X',
-	Y          = 'Y',
-	Z          = 'Z',
+		PrintScreen,
+		Pause,
+		ScrollLock,
+		CapsLock,
+		NumLock,
 
-	NumPad0    = SDLK_KP0,
-	NumPad1    = SDLK_KP1,
-	NumPad2    = SDLK_KP2,
-	NumPad3    = SDLK_KP3,
-	NumPad4    = SDLK_KP4,
-	NumPad5    = SDLK_KP5,
-	NumPad6    = SDLK_KP6,
-	NumPad7    = SDLK_KP7,
-	NumPad8    = SDLK_KP8,
-	NumPad9    = SDLK_KP9,
+		Insert,
+		Delete,
+		Home,
+		End,
+		PageUp,
+		PageDown,
 
-	NumPadDot      = SDLK_KP_PERIOD,
-	NumPadEnter    = SDLK_KP_ENTER,
-	NumPadAdd      = SDLK_KP_PLUS,
-	NumPadSubtract = SDLK_KP_MINUS,
-	NumPadMultiply = SDLK_KP_MULTIPLY,
-	NumPadDivide   = SDLK_KP_DIVIDE,
-	
-	ArrowLeft  = SDLK_LEFT,
-	ArrowRight = SDLK_RIGHT,
-	ArrowUp    = SDLK_UP,
-	ArrowDown  = SDLK_DOWN,
-	
-	Insert     = SDLK_INSERT,
-	Delete     = SDLK_DELETE,
-	Home       = SDLK_HOME,
-	End        = SDLK_END,
-	PageUp     = SDLK_PAGEUP,
-	PageDown   = SDLK_PAGEDOWN,
+		ArrowLeft  = SDLK_LEFT,
+		ArrowRight = SDLK_RIGHT,
+		ArrowUp    = SDLK_UP,
+		ArrowDown  = SDLK_DOWN,
 
-	F1         = SDLK_F1,
-	F2         = SDLK_F2,
-	F3         = SDLK_F3,
-	F4         = SDLK_F4,
-	F5         = SDLK_F5,
-	F6         = SDLK_F6,
-	F7         = SDLK_F7,
-	F8         = SDLK_F8,
-	F9         = SDLK_F9,
-	F10        = SDLK_F10,
-	F11        = SDLK_F11,
-	F12        = SDLK_F12,
+		ShiftL,
+		ShiftR,
+		CtrlL,
+		CtrlR,
+		AltL,
+		AltR,
+		MetaL,
+		MetaR,
+		SuperL, // Windows key
+		SuperR,
 
-	NumLock    = SDLK_NUMLOCK,
-	ScrollLock = SDLK_SCROLLOCK,
-	CapsLock   = SDLK_CAPSLOCK,
+		NumPad0,
+		NumPad1,
+		NumPad2,
+		NumPad3,
+		NumPad4,
+		NumPad5,
+		NumPad6,
+		NumPad7,
+		NumPad8,
+		NumPad9,
+		NumPadDivide,
+		NumPadMultiply,
+		NumPadSubtract,
+		NumPadAdd,
+		NumPadDecimal,
+		NumPadEnter,
 
-	// mouse button key codes
-	MouseL  = SDLK_LAST,
-	MouseR,
-	MouseM,
-	MouseX1,
-	MouseX2,
+		SPECIAL_END,
 
-	// not a real KeyCode
-	KEY_CODE_COUNT
-};
+		MOUSE_BEGIN = SPECIAL_END,
+		MouseLeft = MOUSE_BEGIN,
+		MouseRight,
+		MouseMiddle,
+		MouseX1,
+		MouseX2,
+		MouseX3,
+		MouseX4,
+		MouseX5,
+		MouseX6,
+		MouseX7,
+		MouseX8,
+		MOUSE_END,
 
-SCOPED_ENUM(MouseButton)
+		KEY_CODE_COUNT = MOUSE_END
+	};
+}
+
+namespace MouseButton
 {
-	Left    = 0,
-	Right   = 1,
-	Middle  = 2,
-	X1      = 3, // extra buttons; typically used for, e.g., browser back & forward
-	X2      = 4,
-
-	MOUSE_BUTTON_COUNT
-};
+	enum MouseButtonValues
+	{
+		Left    = 0,
+		Right   = 1,
+		Middle  = 2,
+		// extra buttons; typically used for, e.g., browser back & forward
+		X1, X2, X3, X4, X5, X6, X7, X8,
+		MOUSE_BUTTON_COUNT
+	};
+}
 
 class OrbInput
 {
@@ -202,15 +180,8 @@ public:
 
 	int buttonToKeyCode(int button) const
 	{
-		switch (button)
-		{
-		case MouseButton::Left:   return KeyCode::MouseL;
-		case MouseButton::Right:  return KeyCode::MouseR;
-		case MouseButton::Middle: return KeyCode::MouseM;
-		case MouseButton::X1:     return KeyCode::MouseX1;
-		case MouseButton::X2:     return KeyCode::MouseX2;
-		default: assert(0); return KeyCode::Invalid;
-		}
+		assert(button >= 0 && button < MouseButton::MOUSE_BUTTON_COUNT);
+		return KeyCode::MOUSE_BEGIN + button;
 	}
 
 private:

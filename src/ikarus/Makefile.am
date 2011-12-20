@@ -13,7 +13,6 @@ noinst_HEADERS = \
 	OrbWidgetID.h \
 	Pose.h \
 	refvector.h \
-	scopedenum.h \
 	SkeletonDisplay.h \
 	Skeleton.h \
 	smartptr.h \
