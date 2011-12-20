@@ -5,6 +5,7 @@ AC_PREREQ(2.59)
 AC_INIT([ikarus], [0.00], [jpa.bartholomew@gmail.com])
 
 AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2 dist-xz dist-zip])
+AM_SILENT_RULES([yes])
 
 AC_CANONICAL_HOST
 
