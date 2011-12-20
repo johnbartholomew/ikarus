@@ -26,6 +26,8 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
+#ifndef WHEEL_DELTA
+#define WHEEL_DELTA 120 // I've only ever seen this value for wheel delta, so... I guess this is ok?
 #endif
 
 // global internal headers
