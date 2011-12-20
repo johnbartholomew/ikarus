@@ -16,3 +16,6 @@ Debug/
 Release/
 
 bin/
+
+# vim swap files
+*.swp
