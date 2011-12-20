@@ -325,18 +325,16 @@ int main(int argc, char *argv[])
 		OrbGui gui(&wnd.input, &font, &textRenderer);
 		Ikarus ikarus;
 
-		wnd.input.beginFrame();
 		while (true)
 		{
+			wnd.input.beginFrame();
+			if (! wnd.processEvents())
+				break;
 			if (wnd.input.wasKeyPressed(KeyCode::Escape))
 				break;
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			ikarus.run(gui);
-
-			wnd.input.beginFrame();
-			if (! wnd.processEvents())
-				break;
 
 			wnd.flipGL();
 		}
