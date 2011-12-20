@@ -10,9 +10,6 @@
 //#include "Pose.h"
 #include "IkSolver.h"
 
-TextRenderer *gTextRenderer = 0;
-Font *gFont = 0;
-
 GLuint gridList;
 
 void renderGrid(int N, double m)
@@ -319,11 +316,9 @@ int main(int argc, char *argv[])
 		Font font;
 		//font.loadFromFile("arial-rounded-18.fnt");
 		font.loadFromFile("ms-sans-serif-13.fnt");
-		gFont = &font;
 		TextRenderer textRenderer;
-		gTextRenderer = &textRenderer;
-		
-		OrbGui gui(&wnd.input, gFont, gTextRenderer);
+
+		OrbGui gui(&wnd.input, &font, &textRenderer);
 		Ikarus ikarus;
 
 		wnd.input.beginFrame();
