@@ -24,8 +24,7 @@ noinst_HEADERS = \
 	VertexBuffer.h \
 	vmath.h \
 	Win32Error.h \
-	Window.h \
-	WndDC.h
+	Window.h
 
 ikarus_SOURCES = \
 	Camera.cpp \
