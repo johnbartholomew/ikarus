@@ -19,3 +19,24 @@ bin/
 
 # vim swap files
 *.swp
+
+# autoconf and automake output
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.guess
+config.sub
+depcomp
+install-sh
+missing
+src/Makefile.in
+src/ikarus/Makefile.in
+configure
+
+# ./configure output
+Makefile
+config.log
+config.status
+
+# make output
+.deps/
