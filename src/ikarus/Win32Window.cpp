@@ -1,5 +1,5 @@
 #include "Global.h"
-#include "Window.h"
+#include "Win32Window.h"
 
 const DWORD kWindowStylesEx = WS_EX_ACCEPTFILES;
 const DWORD kWindowStyles   = WS_OVERLAPPEDWINDOW;

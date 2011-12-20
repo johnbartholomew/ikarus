@@ -1,8 +1,8 @@
-#ifndef ORB_WINDOW_H
-#define ORB_WINDOW_H
+#ifndef ORB_WIN32_H
+#define ORB_WIN32_H
 
-#include "Window.h"
-#include "OpenGLContext.h"
+#include "Win32Window.h"
+#include "Win32OpenGLContext.h"
 #include "OrbInput.h"
 
 #define NOMINMAX

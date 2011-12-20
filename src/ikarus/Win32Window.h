@@ -1,5 +1,5 @@
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef WIN32_WINDOW_H
+#define WIN32_WINDOW_H
 
 #include "Win32Error.h"
 #define NOMINMAX

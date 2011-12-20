@@ -1,5 +1,5 @@
-#ifndef OPENGL_CONTEXT_H
-#define OPENGL_CONTEXT_H
+#ifndef WIN32_OPENGL_CONTEXT_H
+#define WIN32_OPENGL_CONTEXT_H
 
 // some typedefs from windows.h so we don't have to bring in that huge header
 typedef struct HWND__ *HWND;

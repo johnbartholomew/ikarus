@@ -1,5 +1,5 @@
 #include "Global.h"
-#include "OpenGLContext.h"
+#include "Win32OpenGLContext.h"
 #include "Win32Error.h"
 
 

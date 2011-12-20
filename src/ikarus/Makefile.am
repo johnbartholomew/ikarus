@@ -8,23 +8,19 @@ noinst_HEADERS = \
 	IkSolver.h \
 	MathUtil.h \
 	murmurhash.h \
-	OpenGLContext.h \
 	OrbGui.h \
 	OrbInput.h \
 	OrbWidgetID.h \
-	OrbWindow.h \
 	Pose.h \
 	refvector.h \
-	resources.h \
 	scopedenum.h \
 	SkeletonDisplay.h \
 	Skeleton.h \
 	smartptr.h \
 	Texture.h \
 	VertexBuffer.h \
-	vmath.h \
-	Win32Error.h \
-	Window.h
+	OrbSDL.h \
+	vmath.h
 
 ikarus_SOURCES = \
 	Camera.cpp \
@@ -33,15 +29,25 @@ ikarus_SOURCES = \
 	Ikarus.cpp \
 	IkSolver.cpp \
 	MathUtil.cpp \
-	OpenGLContext.cpp \
 	OrbGui.cpp \
 	OrbInput.cpp \
-	OrbWindow.cpp \
 	PCH.cpp \
 	Pose.cpp \
 	Skeleton.cpp \
 	SkeletonDisplay.cpp \
 	Texture.cpp \
 	VertexBuffer.cpp \
+	OrbSDL.cpp
+
+# Win32 sources: included in the distribution tarball for completeness
+
+dist_noinst_DATA = \
+	resources.h \
+	OrbWin32.h \
+	OrbWin32.cpp \
+	Win32OpenGLContext.h \
+	Win32OpenGLContext.cpp \
+	Win32Error.h \
 	Win32Error.cpp \
-	Window.cpp
+	Win32Window.h \
+	Win32Window.cpp
