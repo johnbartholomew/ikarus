@@ -1,6 +1,11 @@
 #include "Global.h"
-#include "OrbWin32.h"
 #include "OrbGui.h"
+
+#ifdef _WIN32
+#include "OrbWin32.h"
+#else
+#include "OrbSDL.h"
+#endif
 
 #include "Camera.h"
 #include "SkeletonDisplay.h"
