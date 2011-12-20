@@ -133,9 +133,9 @@ public:
 	
 	// update with a mouse click (no position; assume mouse is at its last known position)
 	void mousePress(int button)
-	{ mouseRelease(button, mMousePos.x, mMousePos.y); }
-	void mouseRelease(int button)
 	{ mousePress(button, mMousePos.x, mMousePos.y); }
+	void mouseRelease(int button)
+	{ mouseRelease(button, mMousePos.x, mMousePos.y); }
 
 	// update the input with a mouse move
 	void mouseMove(int x, int y);
