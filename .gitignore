@@ -40,3 +40,4 @@ config.status
 
 # make output
 .deps/
+src/ikarus/ikarus
