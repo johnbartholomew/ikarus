@@ -114,7 +114,8 @@ public:
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		
-		ColumnLayout lyt(FixedLayout(10, 10, 200, wndSize.y), 10, 10, 10, 10, 3);
+		FixedLayout outerLyt(10, 10, 200, wndSize.y);
+		ColumnLayout lyt(outerLyt, 10, 10, 10, 10, 3);
 
 		Label("Ikarus").run(gui, lyt);
 
