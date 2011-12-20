@@ -1,7 +1,7 @@
 #ifndef ORB_INPUT_H
 #define ORB_INPUT_H
 
-#include "SDL_keysym.h"
+#include <SDL/SDL_keysym.h>
 
 // nb: these are chosen to match the windows virtual key codes
 SCOPED_ENUM(KeyCode)
