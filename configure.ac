@@ -14,8 +14,9 @@ AC_C_CONST
 AC_PROG_RANLIB
 #AC_PROG_LIBTOOL
 
+AC_CHECK_LIB([GL], [glGetString], [], [AC_MSG_ERROR([OpenGL is required])])
 AC_CHECK_LIB([GLEW], [glewInit], [], [AC_MSG_ERROR([GLEW is required])])
-AC_CHECK_LIB([SOIL], [SOIL_load_image], [], [AC_MSG_ERROR([SOIL is required])])
+AC_CHECK_LIB([SOIL], [SOIL_load_image], [], [AC_MSG_ERROR([SOIL is required])], [-lm])
 
 AC_PATH_PROG([SDLCONFIG], [sdl-config])
 if test "x-$SDLCONFIG" = "x-" ; then
