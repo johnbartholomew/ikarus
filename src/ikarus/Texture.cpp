@@ -5,6 +5,21 @@
 
 namespace
 {
+	int formatChannels(Texture::TextureFormat format)
+	{
+		switch (format)
+		{
+			case Texture::FormatAuto: return SOIL_LOAD_AUTO;
+			case Texture::FormatAlpha: return 1;
+			case Texture::FormatLuminance: return 1;
+			case Texture::FormatLuminanceAlpha: return 2;
+			case Texture::FormatRGB: return 3;
+			case Texture::FormatRGBA: return 4;
+			default: assert(0); return SOIL_LOAD_AUTO;
+		}
+	}
+
+	// from http://graphics.stanford.edu/~seander/bithacks.html
 	int nextPowerOfTwo(int n)
 	{
 		--n;
@@ -36,14 +51,14 @@ void Texture::loadFromFile(const char *fname, bool generate_mip_maps, Texture::T
 	assert(! mID);
 
 	int w, h, c;
-	unsigned char *data = SOIL_load_image(fname, &w, &h, &c, SOIL_format_to_channel_count(format));
+	unsigned char *data = SOIL_load_image(fname, &w, &h, &c, formatChannels(format));
 
-	assert((format == FormatAuto) || (c == SOIL_format_to_channel_count(format)));
+	assert((format == FormatAuto) || (c == formatChannels(format)));
 
 	try
 	{
 		mSize = vec2i(w, h);
-		mID = SOIL_create_OGL_texture(data, w, h, format, SOIL_CREATE_NEW_ID, generate_mip_maps ? SOIL_FLAG_MIPMAPS : 0);
+		mID = SOIL_create_OGL_texture(data, w, h, formatChannels(format), SOIL_CREATE_NEW_ID, generate_mip_maps ? SOIL_FLAG_MIPMAPS : 0);
 	}
 	catch (...)
 	{

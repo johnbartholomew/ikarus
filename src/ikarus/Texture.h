@@ -9,8 +9,6 @@
 class Texture
 {
 public:
-	// nb: equal to the SOIL loading format enum
-	// if this changes, then you must add some mapping from this to the SOIL format specifiers (or change SOIL to match)
 	enum TextureFormat
 	{
 		FormatAuto = 0,
